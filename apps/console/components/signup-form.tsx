@@ -52,7 +52,7 @@ export function SignupForm({
         <FieldGroup>
           <div className="flex flex-col items-center gap-2 text-center">
             <div className="flex size-10 items-center justify-center">
-              <Image src="/cube-3d.png" alt="Hypercube" width={40} height={40} />
+              <Image src="/logo.png" alt="Hypercube" width={40} height={40} />
             </div>
             <h1 className="text-xl font-bold">
               {mode === "setup" ? "Set up Hypercube" : "Welcome back"}

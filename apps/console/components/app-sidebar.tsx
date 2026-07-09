@@ -33,7 +33,7 @@ export function AppSidebar({
               render={<Link href="/dashboard" />}
               className="data-[slot=sidebar-menu-button]:!p-1.5"
             >
-              <Image src="/cube-3d.png" alt="" width={22} height={22} />
+              <Image src="/logo.png" alt="" width={22} height={22} />
               <span className="text-base font-semibold">Hypercube</span>
             </SidebarMenuButton>
           </SidebarMenuItem>
