@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="apps/console/public/cube-3d.png" width="120" alt="Hypercube" />
+  <img src="assets/logo.png" width="120" alt="Hypercube" />
 </p>
 
 # Hypercube
