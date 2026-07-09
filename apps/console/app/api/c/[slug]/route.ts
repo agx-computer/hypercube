@@ -23,8 +23,7 @@ export async function GET(
       ),
     })),
   }))
-  if (!result) {
-    return NextResponse.json({ error: "no such cube" }, { status: 404 })
-  }
-  return NextResponse.json(result)
+  return result
+    ? NextResponse.json(result)
+    : NextResponse.json({ error: "no such cube" }, { status: 404 })
 }

@@ -21,11 +21,7 @@ export async function GET(
           site.pageSize,
       ),
     )
-    const list = await runtimeFor(ctx).list({
-      entity: site.name,
-      page,
-      pageSize,
-    })
+    const list = await runtimeFor(ctx).list({ entity: site.name, page, pageSize })
     return {
       entity: site.slug,
       page,
@@ -34,11 +30,8 @@ export async function GET(
       rows: list.rows.map((row) => pickFields(row, site)),
     }
   })
-  if (!result) {
-    return NextResponse.json({ error: "no such cube" }, { status: 404 })
-  }
-  if ("notFound" in result) {
+  if (!result) return NextResponse.json({ error: "no such cube" }, { status: 404 })
+  if ("notFound" in result)
     return NextResponse.json({ error: "no such entity" }, { status: 404 })
-  }
   return NextResponse.json(result)
 }

@@ -1,23 +1,22 @@
 "use client"
 
 import { useRouter } from "next/navigation"
-import { Button } from "@/components/ui/button"
+import { DropdownMenuItem } from "@/components/ui/dropdown-menu"
 import { authClient } from "@/lib/auth-client"
+import { LogOutIcon } from "lucide-react"
 
-export function SignOut() {
+export function SignOutItem() {
   const router = useRouter()
   return (
-    <Button
-      size="sm"
-      variant="ghost"
-      type="button"
+    <DropdownMenuItem
       onClick={async () => {
         await authClient.signOut()
-        router.push("/login")
+        router.push("/signup")
         router.refresh()
       }}
     >
-      Sign out
-    </Button>
+      <LogOutIcon />
+      Log out
+    </DropdownMenuItem>
   )
 }

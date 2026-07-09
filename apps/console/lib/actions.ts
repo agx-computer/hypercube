@@ -19,8 +19,8 @@ export async function createCubeAction(formData: FormData): Promise<void> {
     database_url: String(formData.get("database_url") ?? "").trim(),
     schema_name: String(formData.get("schema_name") ?? "").trim() || "public",
   })
-  revalidatePath("/")
-  redirect(`/cubes/${slug}`)
+  revalidatePath("/dashboard")
+  redirect(`/dashboard/cubes/${slug}`)
 }
 
 export async function saveExposeAction(
@@ -33,6 +33,6 @@ export async function saveExposeAction(
   const expose: Record<string, true> = {}
   for (const name of formData.getAll("expose")) expose[String(name)] = true
   await saveExpose(db, slug, expose)
-  revalidatePath(`/cubes/${slug}`)
-  redirect(`/cubes/${slug}`)
+  revalidatePath(`/dashboard/cubes/${slug}`)
+  redirect(`/dashboard/cubes/${slug}`)
 }

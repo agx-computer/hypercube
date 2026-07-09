@@ -1,3 +1,7 @@
+<p align="center">
+  <img src="apps/console/public/cube-3d.png" width="120" alt="Hypercube" />
+</p>
+
 # Hypercube
 
 Hypercube is a context transform engine. It connects to any data source and

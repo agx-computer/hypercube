@@ -16,7 +16,7 @@ export const auth = betterAuth({
             .executeTakeFirst()
           if (existing) {
             throw new APIError("BAD_REQUEST", {
-              message: "signup is disabled, ask the admin for an account",
+              message: "Signups are closed. Ask the admin for an account.",
             })
           }
           return { data: user }

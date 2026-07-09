@@ -1,4 +1,4 @@
-import type { Db, Policy, SchemaModel, SiteEntity, SiteModel } from "@hypercube/core"
+import type { Db, Policy, SchemaModel, SiteEntity } from "@hypercube/core"
 import { createDb, resolveSite } from "@hypercube/core"
 import { createRuntime, introspect } from "@hypercube/core/postgres"
 import type { CubeRow } from "@hypercube/core/store"
@@ -20,15 +20,6 @@ async function cubeModel(cube: CubeRow, target: Db): Promise<SchemaModel> {
   return model
 }
 
-function cubePolicy(cube: CubeRow): Policy {
-  return {
-    name: cube.name,
-    description: cube.description ?? "",
-    origin: "",
-    expose: cube.expose,
-  }
-}
-
 export function pickFields(
   row: Record<string, unknown>,
   entity: SiteEntity,
@@ -42,7 +33,7 @@ export function pickFields(
 
 export interface CubeContext {
   cube: CubeRow
-  site: SiteModel
+  site: ReturnType<typeof resolveSite>
   target: Db
 }
 
@@ -57,7 +48,13 @@ export async function withCube<T>(
   const target = createDb(cube.database_url, { max: 1 })
   try {
     const model = await cubeModel(cube, target)
-    const site = resolveSite(model, cubePolicy(cube))
+    const policy: Policy = {
+      name: cube.name,
+      description: cube.description ?? "",
+      origin: "",
+      expose: cube.expose,
+    }
+    const site = resolveSite(model, policy)
     return await fn({ cube, site, target })
   } finally {
     await target.destroy()
