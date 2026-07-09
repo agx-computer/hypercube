@@ -1,0 +1,8 @@
+{
+  "name": "hypercube",
+  "private": true,
+  "scripts": {
+    "dev": "pnpm --filter console dev",
+    "typecheck": "pnpm -r typecheck"
+  }
+}
