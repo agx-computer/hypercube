@@ -1,0 +1,209 @@
+"use client"
+
+import { useState } from "react"
+import { useRouter } from "next/navigation"
+import type { Column, ColumnDef } from "@tanstack/react-table"
+import type { CubeField } from "@hypercube/core/store"
+import { DataTable } from "@/components/data-table"
+import { RecordActions } from "@/components/record-actions"
+import { FieldSheet } from "@/components/field-sheet"
+import { RecordSheet } from "@/components/record-sheet"
+import { Button } from "@/components/ui/button"
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu"
+import { deleteFieldAction } from "@/lib/actions"
+import {
+  ArrowDownIcon,
+  ArrowUpIcon,
+  ChevronsUpDownIcon,
+  PencilIcon,
+  PlusIcon,
+  Trash2Icon,
+} from "lucide-react"
+
+type Row = { id: number; data: Record<string, unknown> }
+
+function format(value: unknown): string {
+  if (value === null || value === undefined) return ""
+  if (typeof value === "boolean") return value ? "true" : "false"
+  return String(value)
+}
+
+function ColumnHeader({
+  field,
+  column,
+  onEdit,
+  onDelete,
+}: {
+  field: CubeField
+  column: Column<Row, unknown>
+  onEdit: () => void
+  onDelete: () => void
+}) {
+  const sorted = column.getIsSorted()
+  return (
+    <DropdownMenu>
+      <DropdownMenuTrigger
+        render={
+          <button
+            type="button"
+            className="hover:text-foreground -mx-2 flex items-center gap-1.5 px-2"
+          />
+        }
+      >
+        <span>{field.name}</span>
+        {sorted === "asc" ? (
+          <ArrowUpIcon className="size-3" />
+        ) : sorted === "desc" ? (
+          <ArrowDownIcon className="size-3" />
+        ) : (
+          <ChevronsUpDownIcon className="size-3 opacity-40" />
+        )}
+      </DropdownMenuTrigger>
+      <DropdownMenuContent align="start">
+        <DropdownMenuItem onClick={() => column.toggleSorting(false)}>
+          <ArrowUpIcon />
+          Sort ascending
+        </DropdownMenuItem>
+        <DropdownMenuItem onClick={() => column.toggleSorting(true)}>
+          <ArrowDownIcon />
+          Sort descending
+        </DropdownMenuItem>
+        <DropdownMenuSeparator />
+        <DropdownMenuItem onClick={onEdit}>
+          <PencilIcon />
+          Edit field
+        </DropdownMenuItem>
+        <DropdownMenuItem variant="destructive" onClick={onDelete}>
+          <Trash2Icon />
+          Delete field
+        </DropdownMenuItem>
+      </DropdownMenuContent>
+    </DropdownMenu>
+  )
+}
+
+export function RecordsTable({
+  cubeSlug,
+  fields,
+  rows,
+}: {
+  cubeSlug: string
+  fields: CubeField[]
+  rows: Row[]
+}) {
+  const router = useRouter()
+  const [editing, setEditing] = useState<CubeField | undefined>(undefined)
+  const [adding, setAdding] = useState(false)
+  const [record, setRecord] = useState<Row | undefined>(undefined)
+  const [addingRecord, setAddingRecord] = useState(false)
+
+  async function removeField(name: string) {
+    await deleteFieldAction(cubeSlug, name)
+    router.refresh()
+  }
+
+  const columns: ColumnDef<Row>[] = [
+    { accessorKey: "id", header: "id" },
+    ...fields.map(
+      (f): ColumnDef<Row> => ({
+        id: f.name,
+        accessorFn: (row) => format(row.data[f.name]),
+        header: ({ column }) => (
+          <ColumnHeader
+            field={f}
+            column={column}
+            onEdit={() => setEditing(f)}
+            onDelete={() => removeField(f.name)}
+          />
+        ),
+      }),
+    ),
+    {
+      id: "actions",
+      header: () => (
+        <div className="flex justify-end">
+          <Button
+            size="icon-sm"
+            variant="ghost"
+            onClick={() => setAdding(true)}
+          >
+            <PlusIcon />
+          </Button>
+        </div>
+      ),
+      enableSorting: false,
+      cell: ({ row }) => (
+        <div className="flex justify-end">
+          <RecordActions
+            cubeSlug={cubeSlug}
+            recordId={row.original.id}
+            onEdit={() => setRecord(row.original)}
+          />
+        </div>
+      ),
+    },
+  ]
+
+  return (
+    <>
+      {fields.length === 0 ? (
+        <div className="flex flex-1 flex-col items-center justify-center gap-4 border border-dashed py-20">
+          <p className="text-muted-foreground text-sm">
+            This cube has no fields yet.
+          </p>
+          <Button onClick={() => setAdding(true)}>
+            <PlusIcon />
+            Add field
+          </Button>
+        </div>
+      ) : (
+        <DataTable
+          columns={columns}
+          data={rows}
+          filterKey="*"
+          filterPlaceholder="Search records..."
+          empty="No records yet."
+          action={
+            <Button size="sm" onClick={() => setAddingRecord(true)}>
+              <PlusIcon />
+              Add record
+            </Button>
+          }
+          disableHeaderSort
+          grid
+          selectable
+        />
+      )}
+      {editing ? (
+        <FieldSheet
+          cubeSlug={cubeSlug}
+          field={editing}
+          open={true}
+          onOpenChange={(o) => !o && setEditing(undefined)}
+        />
+      ) : null}
+      <FieldSheet cubeSlug={cubeSlug} open={adding} onOpenChange={setAdding} />
+      {record ? (
+        <RecordSheet
+          cubeSlug={cubeSlug}
+          fields={fields}
+          record={record}
+          open={true}
+          onOpenChange={(o) => !o && setRecord(undefined)}
+        />
+      ) : null}
+      <RecordSheet
+        cubeSlug={cubeSlug}
+        fields={fields}
+        open={addingRecord}
+        onOpenChange={setAddingRecord}
+      />
+    </>
+  )
+}

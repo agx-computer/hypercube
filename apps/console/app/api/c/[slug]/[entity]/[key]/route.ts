@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server"
-import { pickFields, runtimeFor, withCube } from "@/lib/cube-api"
+import { pickFields, withCube } from "@/lib/cube-api"
 
 export const dynamic = "force-dynamic"
 
@@ -11,7 +11,7 @@ export async function GET(
   const result = await withCube(slug, async (ctx) => {
     const site = ctx.site.entities.find((e) => e.slug === entity)
     if (!site) return { notFound: true as const }
-    const row = await runtimeFor(ctx).get(site.name, key)
+    const row = await ctx.runtime.get(site.name, key)
     if (!row) return { notFound: true as const }
     return { entity: site.slug, row: pickFields(row, site) }
   })

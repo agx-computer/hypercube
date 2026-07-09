@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server"
-import { pickFields, runtimeFor, withCube } from "@/lib/cube-api"
+import { pickFields, withCube } from "@/lib/cube-api"
 
 export const dynamic = "force-dynamic"
 
@@ -21,7 +21,7 @@ export async function GET(
           site.pageSize,
       ),
     )
-    const list = await runtimeFor(ctx).list({ entity: site.name, page, pageSize })
+    const list = await ctx.runtime.list({ entity: site.name, page, pageSize })
     return {
       entity: site.slug,
       page,

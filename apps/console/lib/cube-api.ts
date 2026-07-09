@@ -1,8 +1,14 @@
 import type { Db, Policy, SchemaModel, SiteEntity } from "@hypercube/core"
-import { createDb, resolveSite } from "@hypercube/core"
+import {
+  createDb,
+  createInternalRuntime,
+  cubeToModel,
+  resolveSite,
+} from "@hypercube/core"
 import { createRuntime, introspect } from "@hypercube/core/postgres"
 import type { CubeRow } from "@hypercube/core/store"
 import { ensureStore, getCube } from "@hypercube/core/store"
+import type { Runtime } from "@hypercube/core"
 import { instanceDb } from "./db"
 
 const MODEL_TTL_MS = 60_000
@@ -10,14 +16,6 @@ const models = new Map<string, { model: SchemaModel; at: number }>()
 
 export function invalidateModel(slug: string): void {
   models.delete(slug)
-}
-
-async function cubeModel(cube: CubeRow, target: Db): Promise<SchemaModel> {
-  const cached = models.get(cube.slug)
-  if (cached && Date.now() - cached.at < MODEL_TTL_MS) return cached.model
-  const model = await introspect(target, cube.schema_name)
-  models.set(cube.slug, { model, at: Date.now() })
-  return model
 }
 
 export function pickFields(
@@ -34,7 +32,30 @@ export function pickFields(
 export interface CubeContext {
   cube: CubeRow
   site: ReturnType<typeof resolveSite>
-  target: Db
+  runtime: Runtime
+}
+
+async function buildPostgres(
+  cube: CubeRow,
+): Promise<{ model: SchemaModel; runtime: Runtime; close: () => Promise<void> }> {
+  const target = createDb(cube.database_url ?? "", { max: 1 })
+  const cached = models.get(cube.slug)
+  let model = cached && Date.now() - cached.at < MODEL_TTL_MS ? cached.model : null
+  if (!model) {
+    model = await introspect(target, cube.schema_name)
+    models.set(cube.slug, { model, at: Date.now() })
+  }
+  const runtime = createRuntime(target, cube.schema_name, model)
+  return { model, runtime, close: () => target.destroy() }
+}
+
+async function buildInternal(
+  db: Db,
+  cube: CubeRow,
+): Promise<{ model: SchemaModel; runtime: Runtime; close: () => Promise<void> }> {
+  const model = cubeToModel(cube)
+  const runtime = createInternalRuntime(db, cube)
+  return { model, runtime, close: async () => {} }
 }
 
 export async function withCube<T>(
@@ -45,23 +66,23 @@ export async function withCube<T>(
   await ensureStore(db)
   const cube = await getCube(db, slug)
   if (!cube) return null
-  const target = createDb(cube.database_url, { max: 1 })
+  const built =
+    cube.source === "internal"
+      ? await buildInternal(db, cube)
+      : await buildPostgres(cube)
   try {
-    const model = await cubeModel(cube, target)
     const policy: Policy = {
       name: cube.name,
       description: cube.description ?? "",
       origin: "",
-      expose: cube.expose,
+      expose:
+        cube.source === "internal"
+          ? Object.fromEntries(built.model.entities.map((e) => [e.name, true]))
+          : cube.expose,
     }
-    const site = resolveSite(model, policy)
-    return await fn({ cube, site, target })
+    const site = resolveSite(built.model, policy)
+    return await fn({ cube, site, runtime: built.runtime })
   } finally {
-    await target.destroy()
+    await built.close()
   }
-}
-
-export function runtimeFor(ctx: CubeContext) {
-  const model: SchemaModel = { entities: ctx.site.entities }
-  return createRuntime(ctx.target, ctx.cube.schema_name, model)
 }
