@@ -19,7 +19,7 @@ export async function createCubeAction(formData: FormData): Promise<void> {
     database_url: String(formData.get("database_url") ?? "").trim(),
     schema_name: String(formData.get("schema_name") ?? "").trim() || "public",
   })
-  revalidatePath("/dashboard")
+  revalidatePath("/dashboard", "layout")
   redirect(`/dashboard/cubes/${slug}`)
 }
 

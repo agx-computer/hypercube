@@ -21,7 +21,7 @@ export function NavMain({
         <SidebarMenu>
           <SidebarMenuItem>
             <SidebarMenuButton
-              render={<Link href="/dashboard" />}
+              render={<Link href="/dashboard/cubes/new" />}
               tooltip="New cube"
               className="bg-primary text-primary-foreground hover:bg-primary/90 hover:text-primary-foreground"
             >

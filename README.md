@@ -1,8 +1,6 @@
 <p align="center">
-  <img src="assets/logo.png" width="120" alt="Hypercube" />
+  <img src="assets/banner-logo.png" alt="Hypercube" />
 </p>
-
-# Hypercube
 
 Hypercube is a context transform engine. It connects to any data source and
 turns it into an interface agents and applications can use.
