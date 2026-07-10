@@ -5,4 +5,13 @@ export type { EntityPolicy, Policy, SiteEntity, SiteModel } from "./policy"
 export { resolveSite } from "./policy"
 export type { ListParams, ListResult, Runtime } from "./runtime"
 export { cubeToModel, createInternalRuntime } from "./internal"
-export { applyView, viewModel } from "./view"
+export {
+  applyView,
+  viewModel,
+  renderIndex,
+  renderList,
+  renderItem,
+  defaultTemplates,
+  TemplateError,
+} from "./view"
+export type { ViewListResult } from "./view"

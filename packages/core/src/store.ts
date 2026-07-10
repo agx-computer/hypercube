@@ -42,10 +42,27 @@ export interface ViewFieldSelection {
   label?: string
 }
 
+export type Block =
+  | { type: "heading"; level: 1 | 2 | 3; text: string }
+  | { type: "text"; text: string }
+  | { type: "list"; ordered: boolean; item: string }
+  | { type: "table"; fields: string[] }
+  | { type: "fields"; fields: string[] }
+
+export type ViewTemplate =
+  | { mode: "blocks"; blocks: Block[] }
+  | { mode: "handlebars"; source: string }
+
 export interface ViewConfig {
   fields: ViewFieldSelection[]
   filters: ViewFilter[]
   sort?: { field: string; dir: "asc" | "desc" }
+  pageSize?: number
+  index?: ViewTemplate
+  list?: ViewTemplate
+  item?: ViewTemplate
+  /** @deprecated pre list/item split; read as `list` when present */
+  template?: ViewTemplate
 }
 
 export interface ViewRow {

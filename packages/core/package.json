@@ -7,13 +7,15 @@
   "exports": {
     ".": "./src/index.ts",
     "./postgres": "./src/postgres/index.ts",
-    "./store": "./src/store.ts"
+    "./store": "./src/store.ts",
+    "./view": "./src/view.ts"
   },
   "scripts": {
     "typecheck": "tsc --noEmit",
     "lint": "pnpm run typecheck"
   },
   "dependencies": {
+    "handlebars": "^4.7.9",
     "kysely": "^0.28.0",
     "pg": "^8.16.0"
   },

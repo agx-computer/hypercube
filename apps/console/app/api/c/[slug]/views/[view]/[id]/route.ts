@@ -1,24 +1,25 @@
 import { NextResponse } from "next/server"
-import { renderIndex, TemplateError } from "@hypercube/core"
-import { applyView } from "@hypercube/core/view"
+import { applyView, renderItem, TemplateError } from "@hypercube/core"
 import {
   ensureStore,
   getCube,
+  getRecord,
   getView,
-  listRecords,
 } from "@hypercube/core/store"
 import { instanceDb } from "@/lib/db"
 import { viewApiBase } from "@/lib/origin"
 
 export const dynamic = "force-dynamic"
 
-const DEFAULT_PAGE_SIZE = 25
-
 export async function GET(
   request: Request,
-  { params }: { params: Promise<{ slug: string; view: string }> },
+  { params }: { params: Promise<{ slug: string; view: string; id: string }> },
 ) {
-  const { slug, view: viewSlug } = await params
+  const { slug, view: viewSlug, id } = await params
+  const recordId = Number(id)
+  if (Number.isNaN(recordId)) {
+    return NextResponse.json({ error: "bad id" }, { status: 400 })
+  }
   const db = instanceDb()
   await ensureStore(db)
   const cube = await getCube(db, slug)
@@ -29,13 +30,12 @@ export async function GET(
   if (!view) {
     return NextResponse.json({ error: "no such view" }, { status: 404 })
   }
-  const { rows } = await listRecords(db, cube.id, { limit: 100000, offset: 0 })
-  const flat = rows.map((r) => ({ id: r.id, ...r.data }))
-  const transformed = applyView(flat, view.config)
-  const pageSize = view.config.pageSize ?? DEFAULT_PAGE_SIZE
-  const total = transformed.length
-  const pages = Math.max(1, Math.ceil(total / pageSize))
-
+  const record = await getRecord(db, cube.id, recordId)
+  if (!record) {
+    return NextResponse.json({ error: "not found" }, { status: 404 })
+  }
+  const flat = { id: record.id, ...record.data }
+  const [projected] = applyView([flat], view.config)
   const meta = {
     cube: { name: cube.name, slug: cube.slug },
     view: { name: view.name, slug: view.slug },
@@ -45,7 +45,7 @@ export async function GET(
   const accept = request.headers.get("accept") ?? ""
   if (accept.includes("text/markdown")) {
     try {
-      const md = renderIndex(view.config, meta, { total, pages, pageSize })
+      const md = renderItem(projected ?? flat, view.config, meta)
       return new Response(md, {
         headers: { "content-type": "text/markdown; charset=utf-8" },
       })
@@ -61,10 +61,7 @@ export async function GET(
   return NextResponse.json({
     cube: cube.slug,
     view: view.slug,
-    name: view.name,
-    total,
-    pages,
-    pageSize,
-    api: meta.api,
+    id: recordId,
+    record: projected ?? flat,
   })
 }

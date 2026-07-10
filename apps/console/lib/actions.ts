@@ -23,6 +23,7 @@ import {
   getView,
 } from "@hypercube/core/store"
 import type { CubeField, ViewConfig } from "@hypercube/core/store"
+import { defaultTemplates } from "@hypercube/core"
 import type { FieldType } from "@hypercube/core"
 import { instanceDb } from "./db"
 import { requireSession } from "./session"
@@ -248,12 +249,17 @@ export async function createViewAction(
   const name = String(formData.get("name") ?? "").trim()
   if (!name) throw new Error("view name required")
   const slug = slugify(name)
-  await createView(db, {
-    cubeId: cube.id,
-    slug,
-    name,
-    config: { fields: [], filters: [] },
-  })
+  const names = cube.fields.map((f) => f.name)
+  const tpl = defaultTemplates(names)
+  const config: ViewConfig = {
+    fields: cube.fields.map((f) => ({ field: f.name })),
+    filters: [],
+    pageSize: 25,
+    index: tpl.index,
+    list: tpl.list,
+    item: tpl.item,
+  }
+  await createView(db, { cubeId: cube.id, slug, name, config })
   revalidatePath(`/dashboard/cubes/${cubeSlug}`)
   redirect(`/dashboard/cubes/${cubeSlug}/views/${slug}`)
 }

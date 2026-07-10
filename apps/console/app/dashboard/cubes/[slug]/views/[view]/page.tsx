@@ -1,6 +1,4 @@
 import { notFound } from "next/navigation"
-import Link from "next/link"
-import { applyView } from "@hypercube/core"
 import {
   ensureStore,
   getCube,
@@ -10,7 +8,7 @@ import {
 } from "@hypercube/core/store"
 import { SiteHeader } from "@/components/site-header"
 import { CubeTabs } from "@/components/cube-tabs"
-import { ViewEditor } from "@/components/view-editor"
+import { ViewWorkspace } from "@/components/view-workspace"
 import { DeleteView } from "@/components/delete-view"
 import { instanceDb } from "@/lib/db"
 
@@ -29,6 +27,7 @@ export default async function ViewPage({
   const view = await getView(db, cube.id, viewSlug)
   if (!view) notFound()
   const views = await listViews(db, cube.id)
+  const { rows } = await listRecords(db, cube.id, { limit: 1000, offset: 0 })
 
   return (
     <>
@@ -40,10 +39,13 @@ export default async function ViewPage({
         cubeSlug={cube.slug}
         views={views.map((v) => ({ slug: v.slug, name: v.name }))}
       />
-      <ViewEditor
+      <ViewWorkspace
         cubeSlug={cube.slug}
+        cubeName={cube.name}
         viewSlug={view.slug}
+        viewName={view.name}
         fields={cube.fields}
+        rows={rows.map((r) => ({ id: r.id, ...r.data }))}
         initial={view.config}
       />
     </>
