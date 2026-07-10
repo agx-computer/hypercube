@@ -16,10 +16,12 @@ import {
 } from "@/components/ui/sidebar"
 
 export function AppSidebar({
+  resources,
   cubes,
   user,
   ...props
 }: {
+  resources: { slug: string; name: string }[]
   cubes: { slug: string; name: string }[]
   user: { name: string; email: string }
 } & React.ComponentProps<typeof Sidebar>) {
@@ -40,7 +42,7 @@ export function AppSidebar({
         </SidebarMenu>
       </SidebarHeader>
       <SidebarContent>
-        <NavMain cubes={cubes} />
+        <NavMain resources={resources} cubes={cubes} />
       </SidebarContent>
       <SidebarFooter>
         <NavUser user={user} />

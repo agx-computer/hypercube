@@ -1,17 +1,17 @@
 import type { Db } from "./db"
 import type { Entity, SchemaModel } from "./model"
-import type { CubeRow } from "./store"
+import type { ResourceRow } from "./store"
 import { getRecord, listRecords } from "./store"
 import type { ListParams, ListResult, Runtime } from "./runtime"
 
-export function cubeToModel(cube: CubeRow): SchemaModel {
+export function resourceToModel(resource: ResourceRow): SchemaModel {
   const entity: Entity = {
-    name: cube.slug,
+    name: resource.slug,
     key: "id",
-    description: cube.description ?? undefined,
+    description: resource.description ?? undefined,
     fields: [
       { name: "id", type: "number", nullable: false },
-      ...cube.fields.map((f) => ({
+      ...resource.fields.map((f) => ({
         name: f.name,
         type: f.type,
         nullable: !f.required,
@@ -22,13 +22,13 @@ export function cubeToModel(cube: CubeRow): SchemaModel {
   return { entities: [entity] }
 }
 
-export function createInternalRuntime(db: Db, cube: CubeRow): Runtime {
+export function createInternalRuntime(db: Db, resource: ResourceRow): Runtime {
   function flatten(row: { id: number; data: Record<string, unknown> }) {
     return { id: row.id, ...row.data }
   }
   return {
     async list({ page, pageSize }: ListParams): Promise<ListResult> {
-      const { rows, total } = await listRecords(db, cube.id, {
+      const { rows, total } = await listRecords(db, resource.id, {
         limit: pageSize,
         offset: (page - 1) * pageSize,
       })
@@ -37,7 +37,7 @@ export function createInternalRuntime(db: Db, cube: CubeRow): Runtime {
     async get(_entity, key) {
       const id = Number(key)
       if (Number.isNaN(id)) return null
-      const row = await getRecord(db, cube.id, id)
+      const row = await getRecord(db, resource.id, id)
       return row ? flatten(row) : null
     },
   }

@@ -6,10 +6,10 @@ import { deleteViewAction } from "@/lib/actions"
 import { Trash2Icon } from "lucide-react"
 
 export function DeleteView({
-  cubeSlug,
+  resourceSlug,
   viewSlug,
 }: {
-  cubeSlug: string
+  resourceSlug: string
   viewSlug: string
 }) {
   const router = useRouter()
@@ -18,7 +18,7 @@ export function DeleteView({
       size="sm"
       variant="outline"
       onClick={async () => {
-        await deleteViewAction(cubeSlug, viewSlug)
+        await deleteViewAction(resourceSlug, viewSlug)
         router.refresh()
       }}
     >

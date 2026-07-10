@@ -13,18 +13,18 @@ import { deleteRecordAction } from "@/lib/actions"
 import { MoreHorizontalIcon, PencilIcon, Trash2Icon } from "lucide-react"
 
 export function RecordActions({
-  cubeSlug,
+  resourceSlug,
   recordId,
   onEdit,
 }: {
-  cubeSlug: string
+  resourceSlug: string
   recordId: number
   onEdit: () => void
 }) {
   const router = useRouter()
 
   async function remove() {
-    await deleteRecordAction(cubeSlug, recordId)
+    await deleteRecordAction(resourceSlug, recordId)
     router.refresh()
   }
 

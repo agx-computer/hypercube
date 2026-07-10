@@ -12,7 +12,10 @@ import {
 import { Field, FieldGroup, FieldLabel } from "@/components/ui/field"
 import { Input } from "@/components/ui/input"
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { createCubeAction, createInternalCubeAction } from "@/lib/actions"
+import {
+  createInternalResourceAction,
+  createPostgresResourceAction,
+} from "@/lib/actions"
 
 function slugify(value: string): string {
   return value
@@ -22,7 +25,7 @@ function slugify(value: string): string {
     .replace(/^-+|-+$/g, "")
 }
 
-export function NewCube() {
+export function NewResource() {
   const [type, setType] = useState<"static" | "dynamic">("static")
   const [slug, setSlug] = useState("")
   const [edited, setEdited] = useState(false)
@@ -30,12 +33,12 @@ export function NewCube() {
   return (
     <Card className="w-full max-w-lg">
       <CardHeader>
-        <CardTitle>New cube</CardTitle>
+        <CardTitle>New resource</CardTitle>
       </CardHeader>
       <CardContent>
         <form
           action={
-            type === "static" ? createInternalCubeAction : createCubeAction
+            type === "static" ? createInternalResourceAction : createPostgresResourceAction
           }
         >
           <FieldGroup>
@@ -44,7 +47,7 @@ export function NewCube() {
               <Input
                 id="name"
                 name="name"
-                placeholder="My cube"
+                placeholder="My data"
                 required
                 onChange={(e) => {
                   if (!edited) setSlug(slugify(e.target.value))
@@ -56,7 +59,7 @@ export function NewCube() {
               <Input
                 id="slug"
                 name="slug"
-                placeholder="my-cube"
+                placeholder="my-data"
                 pattern="[a-z0-9-]+"
                 required
                 value={slug}
@@ -116,7 +119,7 @@ export function NewCube() {
             ) : null}
 
             <Field>
-              <Button type="submit">Create cube</Button>
+              <Button type="submit">Create resource</Button>
             </Field>
           </FieldGroup>
         </form>

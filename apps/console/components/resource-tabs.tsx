@@ -18,17 +18,17 @@ import { Field, FieldLabel } from "@/components/ui/field"
 import { createViewAction } from "@/lib/actions"
 import { PlusIcon } from "lucide-react"
 
-export function CubeTabs({
-  cubeSlug,
+export function ResourceTabs({
+  resourceSlug,
   views,
 }: {
-  cubeSlug: string
+  resourceSlug: string
   views: { slug: string; name: string }[]
 }) {
   const pathname = usePathname()
   const [open, setOpen] = useState(false)
-  const base = `/dashboard/cubes/${cubeSlug}`
-  const create = createViewAction.bind(null, cubeSlug)
+  const base = `/dashboard/resources/${resourceSlug}`
+  const create = createViewAction.bind(null, resourceSlug)
 
   const tab = (href: string, label: string, active: boolean) => (
     <Link
@@ -47,7 +47,7 @@ export function CubeTabs({
 
   return (
     <div className="bg-muted/40 flex items-center gap-1 border-b px-3">
-      {tab(base, "Default", pathname === base)}
+      {tab(base, "Data", pathname === base)}
       {views.map((v) =>
         tab(
           `${base}/views/${v.slug}`,

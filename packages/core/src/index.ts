@@ -4,14 +4,12 @@ export type { Field, FieldType, Relation, Entity, SchemaModel } from "./model"
 export type { EntityPolicy, Policy, SiteEntity, SiteModel } from "./policy"
 export { resolveSite } from "./policy"
 export type { ListParams, ListResult, Runtime } from "./runtime"
-export { cubeToModel, createInternalRuntime } from "./internal"
+export { resourceToModel, createInternalRuntime } from "./internal"
 export {
   applyView,
   viewModel,
-  renderIndex,
-  renderList,
-  renderItem,
-  defaultTemplates,
+  applyTransform,
+  renderCube,
+  defaultTemplate,
   TemplateError,
 } from "./view"
-export type { ViewListResult } from "./view"

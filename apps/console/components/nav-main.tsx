@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation"
 import {
   SidebarGroup,
   SidebarGroupContent,
+  SidebarGroupLabel,
   SidebarMenu,
   SidebarMenuAction,
   SidebarMenuButton,
@@ -14,41 +15,26 @@ import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
-  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
-import { deleteCubeAction } from "@/lib/actions"
+import { deleteCubeAction, deleteResourceAction } from "@/lib/actions"
 import {
   BoxIcon,
+  DatabaseIcon,
   EllipsisVerticalIcon,
-  PencilIcon,
   PlusIcon,
   Trash2Icon,
 } from "lucide-react"
 
-function CubeMenu({ slug }: { slug: string }) {
-  const router = useRouter()
+function ItemMenu({ onDelete }: { onDelete: () => void }) {
   return (
     <DropdownMenu>
       <DropdownMenuTrigger render={<SidebarMenuAction showOnHover />}>
         <EllipsisVerticalIcon />
-        <span className="sr-only">Cube menu</span>
+        <span className="sr-only">Menu</span>
       </DropdownMenuTrigger>
       <DropdownMenuContent side="right" align="start">
-        <DropdownMenuItem
-          render={<Link href={`/dashboard/cubes/${slug}/edit`} />}
-        >
-          <PencilIcon />
-          Edit
-        </DropdownMenuItem>
-        <DropdownMenuSeparator />
-        <DropdownMenuItem
-          variant="destructive"
-          onClick={async () => {
-            await deleteCubeAction(slug)
-            router.refresh()
-          }}
-        >
+        <DropdownMenuItem variant="destructive" onClick={onDelete}>
           <Trash2Icon />
           Delete
         </DropdownMenuItem>
@@ -58,40 +44,84 @@ function CubeMenu({ slug }: { slug: string }) {
 }
 
 export function NavMain({
+  resources,
   cubes,
 }: {
+  resources: { slug: string; name: string }[]
   cubes: { slug: string; name: string }[]
 }) {
+  const router = useRouter()
   return (
-    <SidebarGroup>
-      <SidebarGroupContent className="flex flex-col gap-2">
-        <SidebarMenu>
-          <SidebarMenuItem>
-            <SidebarMenuButton
-              render={<Link href="/dashboard/cubes/new" />}
-              tooltip="New cube"
-              className="bg-primary text-primary-foreground hover:bg-primary/90 hover:text-primary-foreground"
-            >
-              <PlusIcon />
-              <span>New cube</span>
-            </SidebarMenuButton>
-          </SidebarMenuItem>
-        </SidebarMenu>
-        <SidebarMenu>
-          {cubes.map((cube) => (
-            <SidebarMenuItem key={cube.slug}>
+    <>
+      <SidebarGroup>
+        <SidebarGroupLabel>Resources</SidebarGroupLabel>
+        <SidebarGroupContent>
+          <SidebarMenu>
+            <SidebarMenuItem>
               <SidebarMenuButton
-                render={<Link href={`/dashboard/cubes/${cube.slug}`} />}
-                tooltip={cube.name}
+                render={<Link href="/dashboard/resources/new" />}
+                tooltip="New resource"
+                className="text-muted-foreground"
               >
-                <BoxIcon />
-                <span>{cube.name}</span>
+                <PlusIcon />
+                <span>New resource</span>
               </SidebarMenuButton>
-              <CubeMenu slug={cube.slug} />
             </SidebarMenuItem>
-          ))}
-        </SidebarMenu>
-      </SidebarGroupContent>
-    </SidebarGroup>
+            {resources.map((r) => (
+              <SidebarMenuItem key={r.slug}>
+                <SidebarMenuButton
+                  render={<Link href={`/dashboard/resources/${r.slug}`} />}
+                  tooltip={r.name}
+                >
+                  <DatabaseIcon />
+                  <span>{r.name}</span>
+                </SidebarMenuButton>
+                <ItemMenu
+                  onDelete={async () => {
+                    await deleteResourceAction(r.slug)
+                    router.refresh()
+                  }}
+                />
+              </SidebarMenuItem>
+            ))}
+          </SidebarMenu>
+        </SidebarGroupContent>
+      </SidebarGroup>
+
+      <SidebarGroup>
+        <SidebarGroupLabel>Cubes</SidebarGroupLabel>
+        <SidebarGroupContent>
+          <SidebarMenu>
+            <SidebarMenuItem>
+              <SidebarMenuButton
+                render={<Link href="/dashboard/cubes/new" />}
+                tooltip="New cube"
+                className="text-muted-foreground"
+              >
+                <PlusIcon />
+                <span>New cube</span>
+              </SidebarMenuButton>
+            </SidebarMenuItem>
+            {cubes.map((c) => (
+              <SidebarMenuItem key={c.slug}>
+                <SidebarMenuButton
+                  render={<Link href={`/dashboard/cubes/${c.slug}`} />}
+                  tooltip={c.name}
+                >
+                  <BoxIcon />
+                  <span>{c.name}</span>
+                </SidebarMenuButton>
+                <ItemMenu
+                  onDelete={async () => {
+                    await deleteCubeAction(c.slug)
+                    router.refresh()
+                  }}
+                />
+              </SidebarMenuItem>
+            ))}
+          </SidebarMenu>
+        </SidebarGroupContent>
+      </SidebarGroup>
+    </>
   )
 }

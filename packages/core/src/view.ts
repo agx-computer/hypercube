@@ -1,5 +1,6 @@
 import Handlebars from "handlebars"
-import type { Block, CubeRow, ViewConfig, ViewFilter, ViewTemplate } from "./store"
+import jsonata from "jsonata"
+import type { Block, PageTemplate, ResourceRow, ViewConfig, ViewFilter } from "./store"
 import type { Entity, SchemaModel } from "./model"
 
 function matches(value: unknown, filter: ViewFilter): boolean {
@@ -59,9 +60,9 @@ export function applyView(
   })
 }
 
-export function viewModel(cube: CubeRow, config: ViewConfig): SchemaModel {
+export function viewModel(resource: ResourceRow, config: ViewConfig): SchemaModel {
   const selection = config.fields ?? []
-  const base = cube.fields
+  const base = resource.fields
   const fields =
     selection.length === 0
       ? [{ name: "id", type: "number" as const, nullable: false }, ...base.map((f) => ({ name: f.name, type: f.type, nullable: !f.required }))]
@@ -75,9 +76,9 @@ export function viewModel(cube: CubeRow, config: ViewConfig): SchemaModel {
           }
         })
   const entity: Entity = {
-    name: cube.slug,
+    name: resource.slug,
     key: "id",
-    description: cube.description ?? undefined,
+    description: resource.description ?? undefined,
     fields,
     relations: [],
   }
@@ -109,10 +110,23 @@ function autoMarkdown(
 
 export class TemplateError extends Error {}
 
+function describeError(error: unknown): string {
+  if (error instanceof Error) return error.message
+  if (error && typeof error === "object" && "message" in error) {
+    const e = error as { message?: unknown; position?: unknown }
+    const msg =
+      typeof e.message === "string" ? e.message : String(e.message)
+    return typeof e.position === "number"
+      ? `${msg} (position ${e.position})`
+      : msg
+  }
+  return String(error)
+}
+
 export interface RenderMeta {
   cube: { name: string; slug: string }
   view: { name: string; slug: string }
-  api?: { index: string; list: string; item: string }
+  api?: { self: string }
   extra?: Record<string, unknown>
 }
 
@@ -214,7 +228,7 @@ function compileBlocks(
 }
 
 function renderTemplate(
-  template: ViewTemplate | undefined,
+  template: PageTemplate | undefined,
   rows: Record<string, unknown>[],
   meta: RenderMeta,
   fallbackTitle: string,
@@ -228,119 +242,48 @@ function renderTemplate(
   return compileBlocks(template.blocks, rows, meta)
 }
 
-export interface ViewListResult {
-  page: number
-  pages: number
-  total: number
-  markdown: string
-}
-
 const DEFAULT_PAGE_SIZE = 25
 
-export function renderList(
+/** Apply a JSONata expression (data -> data). Empty expr = passthrough. */
+export async function applyTransform(
   rows: Record<string, unknown>[],
-  config: ViewConfig,
-  meta: RenderMeta,
-  opts?: { page?: number },
-): ViewListResult {
+  expr: string,
+): Promise<Record<string, unknown>[]> {
+  const e = expr.trim()
+  if (!e) return rows
   try {
-    const template = config.list ?? config.template
-    const pageSize = config.pageSize ?? DEFAULT_PAGE_SIZE
-    const total = rows.length
-    const pages = Math.max(1, Math.ceil(total / pageSize))
-    const page = Math.min(Math.max(1, opts?.page ?? 1), pages)
-    const start = (page - 1) * pageSize
-    const pageRows = rows.slice(start, start + pageSize)
-    const itemBase = meta.api?.item ?? meta.view.slug
-    const linked = pageRows.map((r) => ({
-      ...r,
-      _link: `${itemBase}/${r._id ?? r.id}`,
-    }))
+    const compiled = jsonata(e)
+    const result = await compiled.evaluate(rows)
+    if (Array.isArray(result)) return result as Record<string, unknown>[]
+    if (result == null) return []
+    return [result as Record<string, unknown>]
+  } catch (error) {
+    throw new TemplateError(describeError(error))
+  }
+}
+
+/** Render already-transformed rows into a single Markdown document. */
+export function renderCube(
+  rows: Record<string, unknown>[],
+  template: PageTemplate | null | undefined,
+  meta: RenderMeta,
+): string {
+  try {
     const m: RenderMeta = {
       ...meta,
-      extra: {
-        ...meta.extra,
-        page,
-        pages,
-        total,
-        hasNext: page < pages,
-        hasPrev: page > 1,
-        next: page + 1,
-        prev: page - 1,
-      },
+      extra: { ...meta.extra, total: rows.length },
     }
-    const markdown = renderTemplate(template, linked, m, meta.view.name)
-    return { page, pages, total, markdown }
+    return renderTemplate(template ?? undefined, rows, m, meta.view.name)
   } catch (error) {
-    throw new TemplateError(
-      error instanceof Error ? error.message : String(error),
-    )
+    throw new TemplateError(describeError(error))
   }
 }
 
-export function renderIndex(
-  config: ViewConfig,
-  meta: RenderMeta,
-  info: { total: number; pages: number; pageSize: number },
-): string {
-  try {
-    const template = config.index
-    const m: RenderMeta = { ...meta, extra: info }
-    return renderTemplate(template, [], m, meta.view.name)
-  } catch (error) {
-    throw new TemplateError(
-      error instanceof Error ? error.message : String(error),
-    )
-  }
-}
-
-export function renderItem(
-  row: Record<string, unknown>,
-  config: ViewConfig,
-  meta: RenderMeta,
-): string {
-  try {
-    const template = config.item
-    return renderTemplate(template, [row], meta, String(row._id ?? row.id ?? meta.view.name))
-  } catch (error) {
-    throw new TemplateError(
-      error instanceof Error ? error.message : String(error),
-    )
-  }
-}
-
-export function defaultTemplates(fieldNames: string[]): {
-  index: ViewTemplate
-  list: ViewTemplate
-  item: ViewTemplate
-} {
-  const first = fieldNames[0] ?? "id"
-  const indexSource = [
-    "# {{view.name}}",
-    "",
-    "{{extra.total}} records in this view.",
-    "",
-    "## API",
-    "",
-    "- List (paginated): `GET {{api.list}}?page=1`",
-    "- One record: `GET {{api.item}}/{id}`",
-    "- Add `Accept: text/markdown` for Markdown, otherwise JSON.",
-    "- {{extra.pages}} page(s), {{extra.pageSize}} per page.",
-    "",
-    "Start at the list, then follow a record's link to its detail.",
-    "",
-  ].join("\n")
-  const listBlocks: Block[] = [
+export function defaultTemplate(fieldNames: string[]): PageTemplate {
+  const blocks: Block[] = [
     { type: "heading", level: 1, text: "{{view.name}}" },
-    { type: "list", ordered: false, item: `[{{${first}}}]({{_link}})` },
+    { type: "text", text: "{{extra.total}} records." },
+    { type: "table", fields: fieldNames },
   ]
-  const itemBlocks: Block[] = [
-    { type: "heading", level: 1, text: `{{${first}}}` },
-    { type: "fields", fields: fieldNames },
-  ]
-  return {
-    index: { mode: "handlebars", source: indexSource },
-    list: { mode: "blocks", blocks: listBlocks },
-    item: { mode: "blocks", blocks: itemBlocks },
-  }
+  return { mode: "blocks", blocks }
 }

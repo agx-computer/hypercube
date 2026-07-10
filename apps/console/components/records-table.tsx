@@ -3,7 +3,7 @@
 import { useState } from "react"
 import { useRouter } from "next/navigation"
 import type { Column, ColumnDef } from "@tanstack/react-table"
-import type { CubeField } from "@hypercube/core/store"
+import type { ResourceField } from "@hypercube/core/store"
 import { DataTable } from "@/components/data-table"
 import { RecordActions } from "@/components/record-actions"
 import { FieldSheet } from "@/components/field-sheet"
@@ -40,7 +40,7 @@ function ColumnHeader({
   onEdit,
   onDelete,
 }: {
-  field: CubeField
+  field: ResourceField
   column: Column<Row, unknown>
   onEdit: () => void
   onDelete: () => void
@@ -89,22 +89,22 @@ function ColumnHeader({
 }
 
 export function RecordsTable({
-  cubeSlug,
+  resourceSlug,
   fields,
   rows,
 }: {
-  cubeSlug: string
-  fields: CubeField[]
+  resourceSlug: string
+  fields: ResourceField[]
   rows: Row[]
 }) {
   const router = useRouter()
-  const [editing, setEditing] = useState<CubeField | undefined>(undefined)
+  const [editing, setEditing] = useState<ResourceField | undefined>(undefined)
   const [adding, setAdding] = useState(false)
   const [record, setRecord] = useState<Row | undefined>(undefined)
   const [addingRecord, setAddingRecord] = useState(false)
 
   async function removeField(name: string) {
-    await deleteFieldAction(cubeSlug, name)
+    await deleteFieldAction(resourceSlug, name)
     router.refresh()
   }
 
@@ -141,7 +141,7 @@ export function RecordsTable({
       cell: ({ row }) => (
         <div className="flex justify-end">
           <RecordActions
-            cubeSlug={cubeSlug}
+            resourceSlug={resourceSlug}
             recordId={row.original.id}
             onEdit={() => setRecord(row.original)}
           />
@@ -155,7 +155,7 @@ export function RecordsTable({
       {fields.length === 0 ? (
         <div className="flex flex-1 flex-col items-center justify-center gap-4 border border-dashed py-20">
           <p className="text-muted-foreground text-sm">
-            This cube has no fields yet.
+            This resource has no fields yet.
           </p>
           <Button onClick={() => setAdding(true)}>
             <PlusIcon />
@@ -182,16 +182,16 @@ export function RecordsTable({
       )}
       {editing ? (
         <FieldSheet
-          cubeSlug={cubeSlug}
+          resourceSlug={resourceSlug}
           field={editing}
           open={true}
           onOpenChange={(o) => !o && setEditing(undefined)}
         />
       ) : null}
-      <FieldSheet cubeSlug={cubeSlug} open={adding} onOpenChange={setAdding} />
+      <FieldSheet resourceSlug={resourceSlug} open={adding} onOpenChange={setAdding} />
       {record ? (
         <RecordSheet
-          cubeSlug={cubeSlug}
+          resourceSlug={resourceSlug}
           fields={fields}
           record={record}
           open={true}
@@ -199,7 +199,7 @@ export function RecordsTable({
         />
       ) : null}
       <RecordSheet
-        cubeSlug={cubeSlug}
+        resourceSlug={resourceSlug}
         fields={fields}
         open={addingRecord}
         onOpenChange={setAddingRecord}

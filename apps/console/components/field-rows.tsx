@@ -4,7 +4,7 @@ import { useState } from "react"
 import { Button } from "@/components/ui/button"
 import { Checkbox } from "@/components/ui/checkbox"
 import { Input } from "@/components/ui/input"
-import type { CubeField } from "@hypercube/core/store"
+import type { ResourceField } from "@hypercube/core/store"
 import { PlusIcon, XIcon } from "lucide-react"
 
 function RequiredToggle({ defaultChecked }: { defaultChecked: boolean }) {
@@ -23,9 +23,9 @@ function RequiredToggle({ defaultChecked }: { defaultChecked: boolean }) {
 
 const TYPES = ["text", "number", "boolean", "date"] as const
 
-type RowState = { key: number; field?: CubeField }
+type RowState = { key: number; field?: ResourceField }
 
-export function FieldRows({ initial }: { initial?: CubeField[] }) {
+export function FieldRows({ initial }: { initial?: ResourceField[] }) {
   const seed: RowState[] = initial?.length
     ? initial.map((f, i) => ({ key: i, field: f }))
     : [{ key: 0 }]

@@ -16,6 +16,7 @@
   },
   "dependencies": {
     "handlebars": "^4.7.9",
+    "jsonata": "^2.2.1",
     "kysely": "^0.28.0",
     "pg": "^8.16.0"
   },

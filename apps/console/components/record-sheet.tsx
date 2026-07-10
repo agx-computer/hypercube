@@ -2,7 +2,7 @@
 
 import { useState } from "react"
 import { useRouter } from "next/navigation"
-import type { CubeField } from "@hypercube/core/store"
+import type { ResourceField } from "@hypercube/core/store"
 import { Button } from "@/components/ui/button"
 import { Checkbox } from "@/components/ui/checkbox"
 import { Field, FieldGroup, FieldLabel } from "@/components/ui/field"
@@ -24,14 +24,14 @@ const INPUT_TYPE: Record<string, string> = {
 }
 
 export function RecordSheet({
-  cubeSlug,
+  resourceSlug,
   fields,
   record,
   open,
   onOpenChange,
 }: {
-  cubeSlug: string
-  fields: CubeField[]
+  resourceSlug: string
+  fields: ResourceField[]
   record?: { id: number; data: Record<string, unknown> }
   open: boolean
   onOpenChange: (open: boolean) => void
@@ -43,9 +43,9 @@ export function RecordSheet({
   async function submit(formData: FormData) {
     setBusy(true)
     if (editing && record) {
-      await updateRecordAction(cubeSlug, record.id, formData)
+      await updateRecordAction(resourceSlug, record.id, formData)
     } else {
-      await createRecordAction(cubeSlug, formData)
+      await createRecordAction(resourceSlug, formData)
     }
     setBusy(false)
     onOpenChange(false)
