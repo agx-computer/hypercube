@@ -111,13 +111,13 @@ export async function ensureStore(db: Db): Promise<void> {
 }
 
 async function doEnsure(db: Db): Promise<void> {
-  // Serialize concurrent first-run DDL across requests/processes.
-  await sql`select pg_advisory_lock(4919283)`.execute(db)
-  try {
-    await ensureSchema(db)
-  } finally {
-    await sql`select pg_advisory_unlock(4919283)`.execute(db)
-  }
+  // Serialize concurrent first-run DDL across requests/processes. The lock
+  // is transaction-scoped so the store stays safe behind poolers running
+  // in transaction mode.
+  await db.transaction().execute(async (trx) => {
+    await sql`select pg_advisory_xact_lock(4919283)`.execute(trx)
+    await ensureSchema(trx)
+  })
 }
 
 async function ensureSchema(db: Db): Promise<void> {

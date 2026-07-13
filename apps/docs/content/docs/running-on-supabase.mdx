@@ -10,10 +10,10 @@ tables (`user`, `session`, `account`, `verification`) in `public`.
 ## Setup
 
 1. Create a project on [supabase.com](https://supabase.com).
-2. Open **Connect** and copy the **Session Pooler** connection string:
+2. Open **Connect** and copy the **Transaction Pooler** connection string:
 
    ```text
-   postgresql://postgres.<project-ref>:<password>@aws-1-<region>.pooler.supabase.com:5432/postgres
+   postgresql://postgres.<project-ref>:<password>@aws-1-<region>.pooler.supabase.com:6543/postgres
    ```
 
 3. Set it as `DATABASE_URL` wherever the console runs — locally in
@@ -23,10 +23,15 @@ An empty project is all it takes; migrations run on first boot.
 
 ## Which connection string
 
-Supabase offers three. Only one of them fits:
+Supabase offers three:
 
-- **Session Pooler** (`*.pooler.supabase.com`, port 5432) — use this.
-- **Transaction Pooler** (port 6543) — breaks prepared statements; avoid.
+- **Transaction Pooler** (`*.pooler.supabase.com`, port 6543) — use this.
+  Many clients share a few backend connections, which is what serverless
+  needs.
+- **Session Pooler** (port 5432) — every connected client holds a slot until
+  it disconnects, capped at the pool's `pool_size`; concurrent serverless
+  instances exhaust it (`EMAXCONNSESSION`). Fine for a single long-lived
+  server.
 - **Direct** (`db.<project-ref>.supabase.co`) — IPv6-only, unreachable from
   many hosts and networks; connections fail with `ENOTFOUND`.
 

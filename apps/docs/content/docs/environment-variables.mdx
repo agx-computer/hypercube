@@ -18,8 +18,10 @@ DATABASE_URL=postgres://user:pass@host:5432/db
 
 - The database user needs DDL privileges; Hypercube creates and migrates its
   schema automatically on boot.
-- On serverless hosts, use a pooled connection string (for Supabase, the
-  Session Pooler) reachable over IPv4.
+- On serverless hosts, use a transaction-mode pooler (for Supabase, the
+  **Transaction Pooler**, port 6543) reachable over IPv4. Session mode gives
+  every client a dedicated slot, and concurrent serverless instances exhaust
+  its `pool_size` cap.
 - An empty database is fine — everything is created on first boot.
 
 ## `BETTER_AUTH_SECRET`

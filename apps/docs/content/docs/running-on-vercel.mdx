@@ -19,9 +19,10 @@ Git integration set up, pushes to `main` deploy automatically.
 
 ## Choosing the connection string
 
-- Use a **pooled** connection string: serverless functions open many
-  short-lived connections. On Supabase that is the **Session Pooler**;
-  transaction pooling (port 6543) breaks prepared statements.
+- Use a **transaction-mode pooler**: serverless runs many concurrent
+  instances, each with its own connection pool. On Supabase that is the
+  **Transaction Pooler** (port 6543). Session mode gives every client a
+  dedicated slot and concurrent instances exhaust its `pool_size` cap.
 - Use an endpoint reachable over **IPv4**. Vercel functions cannot reach
   IPv6-only hosts such as Supabase's direct `db.<ref>.supabase.co` address —
   connections fail with `ENOTFOUND`.
