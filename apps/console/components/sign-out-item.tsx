@@ -3,6 +3,7 @@
 import { useRouter } from "next/navigation"
 import { DropdownMenuItem } from "@/components/ui/dropdown-menu"
 import { authClient } from "@/lib/auth-client"
+import { clearData } from "@/lib/data"
 import { LogOutIcon } from "lucide-react"
 
 export function SignOutItem() {
@@ -11,8 +12,8 @@ export function SignOutItem() {
     <DropdownMenuItem
       onClick={async () => {
         await authClient.signOut()
+        clearData()
         router.push("/signup")
-        router.refresh()
       }}
     >
       <LogOutIcon />

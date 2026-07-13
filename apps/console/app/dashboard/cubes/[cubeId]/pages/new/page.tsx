@@ -1,31 +1,9 @@
-import { notFound } from "next/navigation"
-import { ensureStore, getCube } from "@hypercube/core/store"
-import { PageEditor } from "@/components/page-editor"
-import { instanceDb } from "@/lib/db"
-import { resourceHints } from "@/lib/resource-hints"
+import { CubePageNewView } from "@/components/views/cube-page-new"
 
-export const dynamic = "force-dynamic"
+export function generateStaticParams() {
+  return []
+}
 
-export default async function NewPageEditorPage({
-  params,
-}: {
-  params: Promise<{ cubeId: string }>
-}) {
-  const { cubeId } = await params
-  const db = instanceDb()
-  await ensureStore(db)
-  const [cube, resources] = await Promise.all([
-    getCube(db, cubeId),
-    resourceHints(db),
-  ])
-  if (!cube) notFound()
-
-  return (
-    <PageEditor
-      cubeId={cube.uuid}
-      cubeName={cube.name}
-      resources={resources}
-      isNew
-    />
-  )
+export default function NewPageEditorPage() {
+  return <CubePageNewView />
 }

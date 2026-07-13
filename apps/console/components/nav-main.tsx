@@ -2,7 +2,7 @@
 
 import { useTransition } from "react"
 import Link from "next/link"
-import { usePathname, useRouter } from "next/navigation"
+import { usePathname } from "next/navigation"
 import { toast } from "sonner"
 import {
   Collapsible,
@@ -28,6 +28,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import { deleteCubeAction, deleteResourceAction } from "@/lib/actions"
+import { refreshData } from "@/lib/data"
 import {
   BoxIcon,
   ChevronRightIcon,
@@ -127,7 +128,6 @@ export function NavMain({
   resources: ResourceNav[]
   cubes: CubeNav[]
 }) {
-  const router = useRouter()
   const pathname = usePathname()
 
   return (
@@ -166,7 +166,7 @@ export function NavMain({
                     editHref={`${base}/edit`}
                     onDelete={async () => {
                       await deleteCubeAction(cube.uuid)
-                      router.refresh()
+                      refreshData()
                     }}
                   />
                   <CollapseToggle />
@@ -230,7 +230,7 @@ export function NavMain({
                     editHref={`${base}/edit`}
                     onDelete={async () => {
                       await deleteResourceAction(resource.uuid)
-                      router.refresh()
+                      refreshData()
                     }}
                   />
                   <CollapseToggle />

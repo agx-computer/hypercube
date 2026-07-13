@@ -1,15 +1,14 @@
 "use client"
 
 import { useTransition } from "react"
-import { useRouter } from "next/navigation"
 import { toast } from "sonner"
 import { Button } from "@/components/ui/button"
 import { syncResourceAction } from "@/lib/actions"
+import { refreshData } from "@/lib/data"
 import { RefreshCwIcon } from "lucide-react"
 import { cn } from "@/lib/utils"
 
 export function SyncResource({ resourceId }: { resourceId: string }) {
-  const router = useRouter()
   const [pending, startTransition] = useTransition()
 
   function sync() {
@@ -24,7 +23,7 @@ export function SyncResource({ resourceId }: { resourceId: string }) {
           ? "Synced 1 table"
           : `Synced ${result.tables} tables`,
       )
-      router.refresh()
+      refreshData()
     })
   }
 

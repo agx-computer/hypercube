@@ -1,6 +1,6 @@
 "use client"
 
-import { startTransition, useState } from "react"
+import { useState } from "react"
 import { useRouter } from "next/navigation"
 import { toast } from "sonner"
 import {
@@ -18,6 +18,7 @@ import {
   createPostgresResourceAction,
   syncResourceAction,
 } from "@/lib/actions"
+import { refreshData } from "@/lib/data"
 
 type ResourceType = "static" | "dynamic"
 
@@ -46,7 +47,7 @@ export function NewResource() {
               : `Synced ${result.tables} tables`,
             { id },
           )
-          startTransition(() => router.refresh())
+          refreshData()
         })
         .catch((error) => {
           toast.error(`Sync failed: ${String(error)}`, { id })

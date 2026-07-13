@@ -1,6 +1,5 @@
 "use client"
 
-import { useRouter } from "next/navigation"
 import type { TableField } from "@hypercube/core/store"
 import { Button } from "@/components/ui/button"
 import { SubmitButton } from "@/components/submit-button"
@@ -16,6 +15,7 @@ import {
   SheetTitle,
 } from "@/components/ui/sheet"
 import { createRecordAction, updateRecordAction } from "@/lib/actions"
+import { refreshData } from "@/lib/data"
 
 const INPUT_TYPE: Record<string, string> = {
   text: "text",
@@ -38,7 +38,6 @@ export function RecordSheet({
   open: boolean
   onOpenChange: (open: boolean) => void
 }) {
-  const router = useRouter()
   const editing = Boolean(record)
 
   async function submit(formData: FormData) {
@@ -48,7 +47,7 @@ export function RecordSheet({
       await createRecordAction(resourceId, tableSlug, formData)
     }
     onOpenChange(false)
-    router.refresh()
+    refreshData()
   }
 
   return (

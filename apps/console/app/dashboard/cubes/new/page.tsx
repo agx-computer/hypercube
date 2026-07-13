@@ -1,7 +1,7 @@
 import { SiteHeader } from "@/components/site-header"
 import { NewCube } from "@/components/new-cube-form"
 
-export default async function NewCubePage() {
+export default function NewCubePage() {
   return (
     <>
       <SiteHeader title="New cube" />

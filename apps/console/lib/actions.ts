@@ -2,7 +2,6 @@
 
 import { headers } from "next/headers"
 import { redirect } from "next/navigation"
-import { revalidatePath } from "next/cache"
 import {
   addField,
   createCube,
@@ -19,7 +18,6 @@ import {
   deleteTable,
   deleteTablesExcept,
   deleteView,
-  ensureStore,
   getCube,
   getResource,
   getTable,
@@ -72,9 +70,7 @@ export async function createInternalResourceAction(
   const name = String(formData.get("name") ?? "").trim()
   if (!name) throw new Error("resource name required")
   const db = instanceDb()
-  await ensureStore(db)
   const created = await createInternalResource(db, { name })
-  revalidatePath("/dashboard", "layout")
   redirect(`/dashboard/resources/${created.uuid}`)
 }
 
@@ -85,13 +81,11 @@ export async function createPostgresResourceAction(
   const name = String(formData.get("name") ?? "").trim()
   if (!name) throw new Error("resource name required")
   const db = instanceDb()
-  await ensureStore(db)
   const created = await createPostgresResource(db, {
     name,
     database_url: String(formData.get("database_url") ?? "").trim(),
     schema_name: String(formData.get("schema_name") ?? "").trim() || "public",
   })
-  revalidatePath("/dashboard", "layout")
   return { uuid: created.uuid }
 }
 
@@ -101,13 +95,11 @@ export async function updateResourceAction(
 ): Promise<void> {
   await requireSession()
   const db = instanceDb()
-  await ensureStore(db)
   await updateResourceName(
     db,
     resourceId,
     String(formData.get("name") ?? "").trim(),
   )
-  revalidatePath("/dashboard", "layout")
   redirect(`/dashboard/resources/${resourceId}`)
 }
 
@@ -117,7 +109,6 @@ export async function updateResourceConnectionAction(
 ): Promise<void> {
   await requireSession()
   const db = instanceDb()
-  await ensureStore(db)
   const resource = await getResource(db, resourceId)
   if (!resource || resource.source !== "postgres") {
     throw new Error("no such resource")
@@ -132,16 +123,13 @@ export async function updateResourceConnectionAction(
       await syncPostgresResource(db, updated)
     } catch {}
   }
-  revalidatePath("/dashboard", "layout")
   redirect(`/dashboard/resources/${resourceId}`)
 }
 
 export async function deleteResourceAction(resourceId: string): Promise<void> {
   await requireSession()
   const db = instanceDb()
-  await ensureStore(db)
   await deleteResource(db, resourceId)
-  revalidatePath("/dashboard", "layout")
   redirect("/dashboard")
 }
 
@@ -192,14 +180,12 @@ export async function syncResourceAction(
 ): Promise<{ error: string } | { tables: number }> {
   await requireSession()
   const db = instanceDb()
-  await ensureStore(db)
   const resource = await getResource(db, resourceId)
   if (!resource || resource.source !== "postgres") {
     return { error: "no such resource" }
   }
   try {
     const tables = await syncPostgresResource(db, resource)
-    revalidatePath("/dashboard", "layout")
     return { tables }
   } catch (error) {
     return { error: error instanceof Error ? error.message : String(error) }
@@ -228,7 +214,6 @@ export async function createTableAction(
 ): Promise<void> {
   await requireSession()
   const db = instanceDb()
-  await ensureStore(db)
   const resource = await getResource(db, resourceId)
   if (!resource) throw new Error("no such resource")
   if (resource.source !== "internal") {
@@ -239,7 +224,6 @@ export async function createTableAction(
   const slug = slugify(name)
   if (!slug) throw new Error("invalid table name")
   await createTable(db, { resourceId: resource.id, slug, name, fields: [] })
-  revalidatePath("/dashboard", "layout")
   redirect(`/dashboard/resources/${resourceId}/tables/${slug}`)
 }
 
@@ -250,12 +234,10 @@ export async function updateTableMetaAction(
 ): Promise<void> {
   await requireSession()
   const db = instanceDb()
-  await ensureStore(db)
   const { resource } = await requireTable(db, resourceId, tableSlug)
   const name = String(formData.get("name") ?? "").trim()
   if (!name) throw new Error("table name required")
   await updateTableName(db, resource.id, tableSlug, name)
-  revalidatePath("/dashboard", "layout")
   redirect(`/dashboard/resources/${resourceId}/tables/${tableSlug}`)
 }
 
@@ -265,11 +247,9 @@ export async function deleteTableAction(
 ): Promise<void> {
   await requireSession()
   const db = instanceDb()
-  await ensureStore(db)
   const resource = await getResource(db, resourceId)
   if (!resource) throw new Error("no such resource")
   await deleteTable(db, resource.id, tableSlug)
-  revalidatePath("/dashboard", "layout")
   redirect(`/dashboard/resources/${resourceId}`)
 }
 
@@ -295,10 +275,8 @@ export async function addFieldAction(
   const field = fieldFromForm(formData)
   if (!field.name) throw new Error("field name required")
   const db = instanceDb()
-  await ensureStore(db)
   const { table } = await requireTable(db, resourceId, tableSlug)
   await addField(db, table.id, field)
-  revalidatePath(`/dashboard/resources/${resourceId}/tables/${tableSlug}`)
 }
 
 export async function updateFieldAction(
@@ -311,10 +289,8 @@ export async function updateFieldAction(
   const field = fieldFromForm(formData)
   if (!field.name) throw new Error("field name required")
   const db = instanceDb()
-  await ensureStore(db)
   const { table } = await requireTable(db, resourceId, tableSlug)
   await updateField(db, table.id, original, field)
-  revalidatePath(`/dashboard/resources/${resourceId}/tables/${tableSlug}`)
 }
 
 export async function deleteFieldAction(
@@ -324,10 +300,8 @@ export async function deleteFieldAction(
 ): Promise<void> {
   await requireSession()
   const db = instanceDb()
-  await ensureStore(db)
   const { table } = await requireTable(db, resourceId, tableSlug)
   await deleteField(db, table.id, name)
-  revalidatePath(`/dashboard/resources/${resourceId}/tables/${tableSlug}`)
 }
 
 // ---------------------------------------------------------------------------
@@ -346,7 +320,6 @@ async function readData(
   formData: FormData,
 ) {
   const db = instanceDb()
-  await ensureStore(db)
   const { table } = await requireTable(db, resourceId, tableSlug)
   const data: Record<string, unknown> = {}
   for (const field of table.fields) {
@@ -370,7 +343,6 @@ export async function createRecordAction(
   await requireSession()
   const { db, table, data } = await readData(resourceId, tableSlug, formData)
   await insertRecord(db, table.id, data)
-  revalidatePath(`/dashboard/resources/${resourceId}/tables/${tableSlug}`)
 }
 
 export async function updateRecordAction(
@@ -382,7 +354,6 @@ export async function updateRecordAction(
   await requireSession()
   const { db, table, data } = await readData(resourceId, tableSlug, formData)
   await updateRecord(db, table.id, recordId, data)
-  revalidatePath(`/dashboard/resources/${resourceId}/tables/${tableSlug}`)
 }
 
 export async function deleteRecordAction(
@@ -392,10 +363,8 @@ export async function deleteRecordAction(
 ): Promise<void> {
   await requireSession()
   const db = instanceDb()
-  await ensureStore(db)
   const { table } = await requireTable(db, resourceId, tableSlug)
   await deleteRecord(db, table.id, recordId)
-  revalidatePath(`/dashboard/resources/${resourceId}/tables/${tableSlug}`)
 }
 
 // ---------------------------------------------------------------------------
@@ -409,7 +378,6 @@ export async function createViewAction(
 ): Promise<void> {
   await requireSession()
   const db = instanceDb()
-  await ensureStore(db)
   const { table } = await requireTable(db, resourceId, tableSlug)
   const name = String(formData.get("name") ?? "").trim()
   if (!name) throw new Error("view name required")
@@ -421,7 +389,6 @@ export async function createViewAction(
     pageSize: 25,
   }
   await createView(db, { tableId: table.id, slug, name, config })
-  revalidatePath(`/dashboard/resources/${resourceId}/tables/${tableSlug}`)
   redirect(
     `/dashboard/resources/${resourceId}/tables/${tableSlug}/views/${slug}`,
   )
@@ -435,14 +402,10 @@ export async function saveViewAction(
 ): Promise<void> {
   await requireSession()
   const db = instanceDb()
-  await ensureStore(db)
   const { table } = await requireTable(db, resourceId, tableSlug)
   const view = await getView(db, table.id, viewSlug)
   if (!view) throw new Error("no such view")
   await updateView(db, table.id, viewSlug, { name: view.name, config })
-  revalidatePath(
-    `/dashboard/resources/${resourceId}/tables/${tableSlug}/views/${viewSlug}`,
-  )
 }
 
 export async function deleteViewAction(
@@ -452,10 +415,8 @@ export async function deleteViewAction(
 ): Promise<void> {
   await requireSession()
   const db = instanceDb()
-  await ensureStore(db)
   const { table } = await requireTable(db, resourceId, tableSlug)
   await deleteView(db, table.id, viewSlug)
-  revalidatePath(`/dashboard/resources/${resourceId}/tables/${tableSlug}`)
   redirect(`/dashboard/resources/${resourceId}/tables/${tableSlug}`)
 }
 
@@ -475,7 +436,6 @@ const STARTER_SOURCE = [
 export async function createCubeAction(formData: FormData): Promise<void> {
   await requireSession()
   const db = instanceDb()
-  await ensureStore(db)
   const name = String(formData.get("name") ?? "").trim()
   if (!name) throw new Error("cube name required")
   const cube = await createCube(db, { name })
@@ -486,7 +446,6 @@ export async function createCubeAction(formData: FormData): Promise<void> {
     source: STARTER_SOURCE,
   })
   await updateCube(db, cube.uuid, { entryPageId: pageId })
-  revalidatePath("/dashboard", "layout")
   redirect(`/dashboard/cubes/${cube.uuid}`)
 }
 
@@ -496,20 +455,16 @@ export async function updateCubeAction(
 ): Promise<void> {
   await requireSession()
   const db = instanceDb()
-  await ensureStore(db)
   const name = String(formData.get("name") ?? "").trim()
   if (!name) throw new Error("cube name required")
   await updateCube(db, cubeId, { name })
-  revalidatePath("/dashboard", "layout")
   redirect(`/dashboard/cubes/${cubeId}`)
 }
 
 export async function deleteCubeAction(cubeId: string): Promise<void> {
   await requireSession()
   const db = instanceDb()
-  await ensureStore(db)
   await deleteCube(db, cubeId)
-  revalidatePath("/dashboard", "layout")
   redirect("/dashboard")
 }
 
@@ -532,7 +487,6 @@ export async function createPageAction(
 ): Promise<{ error: string } | void> {
   await requireSession()
   const db = instanceDb()
-  await ensureStore(db)
   const cube = await getCube(db, cubeId)
   if (!cube) throw new Error("no such cube")
   const name = input.name.trim()
@@ -550,7 +504,6 @@ export async function createPageAction(
   if (cube.entry_page_id == null) {
     await updateCube(db, cubeId, { entryPageId: pageId })
   }
-  revalidatePath(`/dashboard/cubes/${cubeId}`)
   redirect(`/dashboard/cubes/${cubeId}/pages/${slug}`)
 }
 
@@ -561,13 +514,11 @@ export async function updatePageMetaAction(
 ): Promise<void> {
   await requireSession()
   const db = instanceDb()
-  await ensureStore(db)
   const cube = await getCube(db, cubeId)
   if (!cube) throw new Error("no such cube")
   const name = String(formData.get("name") ?? "").trim()
   if (!name) throw new Error("page name required")
   await updatePage(db, cube.id, pageSlug, { name })
-  revalidatePath("/dashboard", "layout")
   redirect(`/dashboard/cubes/${cubeId}/pages/${pageSlug}`)
 }
 
@@ -578,13 +529,11 @@ export async function savePageAction(
 ): Promise<{ error: string } | void> {
   await requireSession()
   const db = instanceDb()
-  await ensureStore(db)
   const cube = await getCube(db, cubeId)
   if (!cube) throw new Error("no such cube")
   const invalid = validateSource(patch.source)
   if (invalid) return { error: invalid }
   await updatePage(db, cube.id, pageSlug, { source: patch.source })
-  revalidatePath(`/dashboard/cubes/${cubeId}/pages/${pageSlug}`)
 }
 
 export async function previewPageAction(
@@ -594,7 +543,6 @@ export async function previewPageAction(
 ): Promise<{ markdown: string } | { error: string }> {
   await requireSession()
   const db = instanceDb()
-  await ensureStore(db)
   const cube = await getCube(db, cubeId)
   if (!cube) return { error: "no such cube" }
   const pages = await listPages(db, cube.id)
@@ -616,10 +564,8 @@ export async function deletePageAction(
 ): Promise<void> {
   await requireSession()
   const db = instanceDb()
-  await ensureStore(db)
   const cube = await getCube(db, cubeId)
   if (!cube) throw new Error("no such cube")
   await deletePage(db, cube.id, pageSlug)
-  revalidatePath(`/dashboard/cubes/${cubeId}`)
   redirect(`/dashboard/cubes/${cubeId}`)
 }

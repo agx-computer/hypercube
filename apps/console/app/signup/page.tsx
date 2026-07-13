@@ -1,9 +1,7 @@
-import { headers } from "next/headers"
 import { redirect } from "next/navigation"
-import { ensureStore } from "@hypercube/core/store"
 import { SignupForm } from "@/components/signup-form"
-import { auth } from "@/lib/auth"
 import { instanceDb } from "@/lib/db"
+import { getSession } from "@/lib/session"
 
 export const dynamic = "force-dynamic"
 
@@ -17,8 +15,7 @@ async function hasUsers(): Promise<boolean> {
 }
 
 export default async function SignupPage() {
-  await ensureStore(instanceDb())
-  const session = await auth.api.getSession({ headers: await headers() })
+  const session = await getSession()
   if (session) redirect("/dashboard")
   const setup = !(await hasUsers())
   return (

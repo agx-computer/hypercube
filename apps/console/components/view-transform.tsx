@@ -1,7 +1,6 @@
 "use client"
 
 import { useMemo, useState } from "react"
-import { useRouter } from "next/navigation"
 import { applyView } from "@hypercube/core/view"
 import type { TableField, ViewConfig } from "@hypercube/core/store"
 import { Button } from "@/components/ui/button"
@@ -15,6 +14,7 @@ import {
 } from "@/components/ui/table"
 import { ViewConfigSheet, type ConfigState } from "@/components/view-config-sheet"
 import { saveViewAction } from "@/lib/actions"
+import { refreshData } from "@/lib/data"
 import { SlidersHorizontalIcon } from "lucide-react"
 
 function cellText(value: unknown): string {
@@ -38,7 +38,6 @@ export function ViewTransform({
   rows: Record<string, unknown>[]
   initial: ViewConfig
 }) {
-  const router = useRouter()
   const [open, setOpen] = useState(false)
   const [busy, setBusy] = useState(false)
 
@@ -90,7 +89,7 @@ export function ViewTransform({
     await saveViewAction(resourceId, tableSlug, viewSlug, config)
     setBusy(false)
     setOpen(false)
-    router.refresh()
+    refreshData()
   }
 
   return (

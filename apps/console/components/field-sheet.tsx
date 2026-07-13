@@ -1,6 +1,5 @@
 "use client"
 
-import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { SubmitButton } from "@/components/submit-button"
 import { Checkbox } from "@/components/ui/checkbox"
@@ -16,6 +15,7 @@ import {
 } from "@/components/ui/sheet"
 import type { TableField } from "@hypercube/core/store"
 import { addFieldAction, updateFieldAction } from "@/lib/actions"
+import { refreshData } from "@/lib/data"
 
 const TYPES = ["text", "number", "boolean", "date"] as const
 
@@ -32,7 +32,6 @@ export function FieldSheet({
   open: boolean
   onOpenChange: (open: boolean) => void
 }) {
-  const router = useRouter()
   const editing = Boolean(field)
 
   async function submit(formData: FormData) {
@@ -42,7 +41,7 @@ export function FieldSheet({
       await addFieldAction(resourceId, tableSlug, formData)
     }
     onOpenChange(false)
-    router.refresh()
+    refreshData()
   }
 
   return (

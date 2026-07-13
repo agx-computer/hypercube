@@ -1,7 +1,6 @@
 "use client"
 
 import { useState, useTransition } from "react"
-import { useRouter } from "next/navigation"
 import { toast } from "sonner"
 import type { Column, ColumnDef } from "@tanstack/react-table"
 import type { TableField } from "@hypercube/core/store"
@@ -18,6 +17,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import { deleteFieldAction } from "@/lib/actions"
+import { refreshData } from "@/lib/data"
 import {
   ArrowDownIcon,
   ArrowUpIcon,
@@ -103,7 +103,6 @@ export function RecordsTable({
   rows: Row[]
   readOnly?: boolean
 }) {
-  const router = useRouter()
   const [editing, setEditing] = useState<TableField | undefined>(undefined)
   const [adding, setAdding] = useState(false)
   const [record, setRecord] = useState<Row | undefined>(undefined)
@@ -115,7 +114,7 @@ export function RecordsTable({
     startTransition(async () => {
       await deleteFieldAction(resourceId, tableSlug, name)
       toast.dismiss(id)
-      router.refresh()
+      refreshData()
     })
   }
 

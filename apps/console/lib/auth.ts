@@ -5,6 +5,7 @@ import { instanceDb } from "./db"
 export const auth = betterAuth({
   database: { db: instanceDb(), type: "postgres" },
   emailAndPassword: { enabled: true },
+  session: { cookieCache: { enabled: true, maxAge: 5 * 60 } },
   databaseHooks: {
     user: {
       create: {

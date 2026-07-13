@@ -2,7 +2,6 @@
 
 import { useEffect, useRef, useState } from "react"
 import Link from "next/link"
-import { useRouter } from "next/navigation"
 import Markdown from "react-markdown"
 import remarkGfm from "remark-gfm"
 import {
@@ -41,6 +40,7 @@ import {
   previewPageAction,
   savePageAction,
 } from "@/lib/actions"
+import { refreshData } from "@/lib/data"
 import { cn } from "@/lib/utils"
 import {
   EyeIcon,
@@ -72,7 +72,6 @@ export function PageEditor({
   isEntry?: boolean
   source?: string
 }) {
-  const router = useRouter()
   const [busy, setBusy] = useState(false)
   const [name, setName] = useState(pageName ?? "")
   const [initial] = useState(() => {
@@ -177,7 +176,7 @@ export function PageEditor({
     } finally {
       setBusy(false)
     }
-    router.refresh()
+    refreshData()
   }
 
   async function openPreview() {

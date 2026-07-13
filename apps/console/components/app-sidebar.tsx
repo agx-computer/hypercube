@@ -3,28 +3,46 @@
 import * as React from "react"
 import Link from "next/link"
 import Image from "next/image"
-import { NavMain, type CubeNav, type ResourceNav } from "@/components/nav-main"
+import { usePathname } from "next/navigation"
+import { NavMain } from "@/components/nav-main"
 import { NavUser } from "@/components/nav-user"
 import {
   Sidebar,
   SidebarContent,
   SidebarFooter,
+  SidebarGroup,
+  SidebarGroupContent,
   SidebarHeader,
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
+  SidebarMenuSkeleton,
 } from "@/components/ui/sidebar"
+import type { NavData } from "@/lib/api-types"
+import { useData } from "@/lib/data"
 
-export function AppSidebar({
-  resources,
-  cubes,
-  user,
-  ...props
-}: {
-  resources: ResourceNav[]
-  cubes: CubeNav[]
-  user: { name: string; email: string }
-} & React.ComponentProps<typeof Sidebar>) {
+function NavSkeleton() {
+  return (
+    <SidebarGroup>
+      <SidebarGroupContent>
+        <SidebarMenu>
+          {Array.from({ length: 6 }).map((_, i) => (
+            <SidebarMenuItem key={i}>
+              <SidebarMenuSkeleton showIcon />
+            </SidebarMenuItem>
+          ))}
+        </SidebarMenu>
+      </SidebarGroupContent>
+    </SidebarGroup>
+  )
+}
+
+export function AppSidebar(props: React.ComponentProps<typeof Sidebar>) {
+  const pathname = usePathname()
+  const { data, mutate } = useData<NavData>("/api/nav")
+  React.useEffect(() => {
+    mutate()
+  }, [pathname, mutate])
   return (
     <Sidebar collapsible="offcanvas" {...props}>
       <SidebarHeader>
@@ -42,10 +60,22 @@ export function AppSidebar({
         </SidebarMenu>
       </SidebarHeader>
       <SidebarContent>
-        <NavMain resources={resources} cubes={cubes} />
+        {data ? (
+          <NavMain resources={data.resources} cubes={data.cubes} />
+        ) : (
+          <NavSkeleton />
+        )}
       </SidebarContent>
       <SidebarFooter>
-        <NavUser user={user} />
+        {data ? (
+          <NavUser user={data.user} />
+        ) : (
+          <SidebarMenu>
+            <SidebarMenuItem>
+              <SidebarMenuSkeleton showIcon className="h-12" />
+            </SidebarMenuItem>
+          </SidebarMenu>
+        )}
       </SidebarFooter>
     </Sidebar>
   )
