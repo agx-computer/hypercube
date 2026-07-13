@@ -4,7 +4,7 @@ import { useRouter } from "next/navigation"
 import { useState } from "react"
 import Image from "next/image"
 import { cn } from "@/lib/utils"
-import { Button } from "@/components/ui/button"
+import { SubmitButton } from "@/components/submit-button"
 import {
   Field,
   FieldDescription,
@@ -22,10 +22,8 @@ export function SignupForm({
 }: { mode: "setup" | "signin" } & React.ComponentProps<"div">) {
   const router = useRouter()
   const [error, setError] = useState("")
-  const [busy, setBusy] = useState(false)
 
   async function submit(formData: FormData) {
-    setBusy(true)
     setError("")
     const email = String(formData.get("email") ?? "")
     const password = String(formData.get("password") ?? "")
@@ -37,7 +35,6 @@ export function SignupForm({
             name: String(formData.get("name") ?? "") || email,
           })
         : await authClient.signIn.email({ email, password })
-    setBusy(false)
     if (result.error) {
       setError(result.error.message ?? "Something went wrong")
       return
@@ -91,9 +88,9 @@ export function SignupForm({
           </Field>
           {error ? <FieldError>{error}</FieldError> : null}
           <Field>
-            <Button type="submit" disabled={busy}>
+            <SubmitButton>
               {mode === "setup" ? "Create admin account" : "Sign in"}
-            </Button>
+            </SubmitButton>
           </Field>
         </FieldGroup>
       </form>

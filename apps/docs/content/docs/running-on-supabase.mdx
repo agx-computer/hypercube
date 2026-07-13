@@ -1,0 +1,34 @@
+---
+title: Running on Supabase
+description: Use a Supabase project as the application database.
+---
+
+Supabase works well as the application database. Best as a dedicated project:
+Hypercube creates its own `hypercube` schema on first boot, and the auth
+tables (`user`, `session`, `account`, `verification`) in `public`.
+
+## Setup
+
+1. Create a project on [supabase.com](https://supabase.com).
+2. Open **Connect** and copy the **Session Pooler** connection string:
+
+   ```text
+   postgresql://postgres.<project-ref>:<password>@aws-1-<region>.pooler.supabase.com:5432/postgres
+   ```
+
+3. Set it as `DATABASE_URL` wherever the console runs — locally in
+   `apps/console/.env.local`, or as an environment variable on your host.
+
+An empty project is all it takes; migrations run on first boot.
+
+## Which connection string
+
+Supabase offers three. Only one of them fits:
+
+- **Session Pooler** (`*.pooler.supabase.com`, port 5432) — use this.
+- **Transaction Pooler** (port 6543) — breaks prepared statements; avoid.
+- **Direct** (`db.<project-ref>.supabase.co`) — IPv6-only, unreachable from
+  many hosts and networks; connections fail with `ENOTFOUND`.
+
+The same rules apply to Supabase databases you connect as dynamic
+resources.

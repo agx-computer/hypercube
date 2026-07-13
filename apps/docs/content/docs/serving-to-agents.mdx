@@ -1,0 +1,38 @@
+---
+title: Serving to agents
+description: Hand a cube to an agent and let it navigate.
+---
+
+A cube is served at one URL. Copy it from the cube's **Connect** button and
+give it to an agent — in a system prompt, a tool description, or a skill.
+
+## What the agent sees
+
+Fetching the cube URL returns the entry page as plain markdown:
+
+```text
+# Acme Store Guide
+
+Acme Outdoors is a small outdoor-gear shop. This cube is the live store
+context for agents: what we sell, who buys, and what's moving.
+
+## Pages
+
+- [Products](https://…/c/…/products)
+- [Orders](https://…/c/…/orders)
+```
+
+Links between pages are full URLs, so the agent can follow them and read the
+whole cube the way a person browses a small website.
+
+Every fetch renders against the current data: edit a record or sync a
+resource, and the next request reflects it.
+
+## Access
+
+Cube URLs are unauthenticated today: anyone with the id can read the cube.
+Share them accordingly; API tokens are on the roadmap.
+
+## Next
+
+The endpoint details: [API](/api).

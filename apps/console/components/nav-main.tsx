@@ -1,7 +1,9 @@
 "use client"
 
+import { useTransition } from "react"
 import Link from "next/link"
 import { usePathname, useRouter } from "next/navigation"
+import { toast } from "sonner"
 import {
   Collapsible,
   CollapsibleContent,
@@ -56,8 +58,9 @@ function ItemMenu({
   onDelete,
 }: {
   editHref: string
-  onDelete: () => void
+  onDelete: () => Promise<void>
 }) {
+  const [pending, startTransition] = useTransition()
   return (
     <DropdownMenu>
       <DropdownMenuTrigger
@@ -71,7 +74,17 @@ function ItemMenu({
           <PencilIcon />
           Edit
         </DropdownMenuItem>
-        <DropdownMenuItem variant="destructive" onClick={onDelete}>
+        <DropdownMenuItem
+          variant="destructive"
+          disabled={pending}
+          onClick={() => {
+            const id = toast.loading("Deleting…")
+            startTransition(async () => {
+              await onDelete()
+              toast.dismiss(id)
+            })
+          }}
+        >
           <Trash2Icon />
           Delete
         </DropdownMenuItem>

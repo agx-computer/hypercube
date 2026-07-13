@@ -1,0 +1,46 @@
+---
+title: Building cubes
+description: Turn resources into a set of pages an agent can navigate.
+---
+
+A **cube** is a set of markdown pages, one of them the entry page. A cube is
+what you hand to an agent: it is served over HTTP as navigable markdown.
+
+## Create a cube
+
+**New cube**, name it. The cube starts with an entry page (shown as
+**Entry** in the sidebar); its address is `/c/:cube`, copyable from the
+cube's **Connect** button.
+
+## Add pages
+
+**New page** from the cube or the sidebar. A page's name gives it a slug;
+the page is served at `/c/:cube/:page`.
+
+The editor has the page body on the left and two panels on the right:
+
+- **Variables** — named JavaScript declarations the body can use, evaluated
+  once per render. Good for filtering or aggregating once and referencing
+  the result in several places.
+- **Resources** — your resources, their tables, and each field with its type
+  and a sample value from the data. **Insert** places a
+  `{{ resources["…"]["…"] }}` reference at the cursor; clicking a field
+  inserts the field name.
+
+**Preview** renders the page with live data, raw or formatted, without
+saving.
+
+## Link the pages
+
+A markdown link to a page's slug — `[Orders](orders)` — resolves to the full
+page URL when served. Give the entry page a list of links and an agent can
+walk the whole cube from one URL. The `pages` binding makes this a
+one-liner:
+
+```text
+{{ pages.map(p => `- [${p.name}](${p.url})`).join("\n") }}
+```
+
+## Next
+
+The page format in full: [Writing pages](/writing-pages).

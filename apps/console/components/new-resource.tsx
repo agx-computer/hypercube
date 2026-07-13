@@ -3,13 +3,13 @@
 import { startTransition, useState } from "react"
 import { useRouter } from "next/navigation"
 import { toast } from "sonner"
-import { Button } from "@/components/ui/button"
 import {
   Card,
   CardContent,
   CardHeader,
   CardTitle,
 } from "@/components/ui/card"
+import { SubmitButton } from "@/components/submit-button"
 import { Field, FieldGroup, FieldLabel } from "@/components/ui/field"
 import { Input } from "@/components/ui/input"
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs"
@@ -110,9 +110,7 @@ export function NewResource() {
             ) : null}
 
             <Field>
-              <Button type="submit" disabled={busy}>
-                Create resource
-              </Button>
+              <SubmitButton busy={busy}>Create resource</SubmitButton>
             </Field>
           </FieldGroup>
         </form>

@@ -15,6 +15,7 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog"
 import { Field, FieldLabel } from "@/components/ui/field"
+import { SubmitButton } from "@/components/submit-button"
 import { createViewAction } from "@/lib/actions"
 import { PlusIcon } from "lucide-react"
 
@@ -75,7 +76,7 @@ export function TableTabs({
               <Input id="view-name" name="name" placeholder="Summary" required />
             </Field>
             <DialogFooter className="mt-4">
-              <Button type="submit">Create view</Button>
+              <SubmitButton>Create view</SubmitButton>
             </DialogFooter>
           </form>
         </DialogContent>

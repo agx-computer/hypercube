@@ -1,6 +1,5 @@
 "use client"
 
-import { Button } from "@/components/ui/button"
 import {
   Card,
   CardContent,
@@ -9,6 +8,7 @@ import {
 } from "@/components/ui/card"
 import { Field, FieldGroup, FieldLabel } from "@/components/ui/field"
 import { Input } from "@/components/ui/input"
+import { SubmitButton } from "@/components/submit-button"
 import { createCubeAction } from "@/lib/actions"
 
 export function NewCube() {
@@ -25,7 +25,7 @@ export function NewCube() {
               <Input id="name" name="name" placeholder="Docs" required />
             </Field>
             <Field>
-              <Button type="submit">Create cube</Button>
+              <SubmitButton>Create cube</SubmitButton>
             </Field>
           </FieldGroup>
         </form>

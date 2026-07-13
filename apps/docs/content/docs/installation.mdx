@@ -1,0 +1,86 @@
+---
+title: Installation
+description: Run Hypercube from source or with Docker.
+---
+
+Hypercube is a single Next.js app backed by one Postgres database, the
+**application database**. It holds your resources, cached tables and records,
+cubes, pages, and user accounts. There is nothing else to operate: no object
+storage, no background workers.
+
+All schema migrations run automatically when the app boots, including the
+authentication tables. Point Hypercube at an empty database and it sets
+itself up.
+
+## From source
+
+Requirements: Node.js 20 or newer, [pnpm](https://pnpm.io), and a Postgres
+database whose user has DDL privileges.
+
+```bash
+git clone https://github.com/agx-computer/hypercube.git
+cd hypercube
+pnpm install
+```
+
+Create `apps/console/.env.local` with the two
+[environment variables](/environment-variables):
+
+```bash
+DATABASE_URL=postgres://user:pass@host:5432/db
+BETTER_AUTH_SECRET=…
+```
+
+Run it:
+
+```bash
+pnpm dev                          # development
+```
+
+```bash
+pnpm --filter console build       # production
+pnpm --filter console start
+```
+
+The console listens on port 3000.
+
+## Docker
+
+The repository ships a compose file that runs Hypercube together with its
+own Postgres:
+
+```bash
+git clone https://github.com/agx-computer/hypercube.git
+cd hypercube
+BETTER_AUTH_SECRET=$(openssl rand -base64 32) docker compose up -d
+```
+
+The console comes up on port 3000; data persists in the `hypercube-db`
+volume.
+
+To run against your own Postgres instead, build just the app image and pass
+the environment:
+
+```bash
+docker build -f apps/console/Dockerfile -t hypercube .
+docker run -p 3000:3000 \
+  -e DATABASE_URL=postgres://… \
+  -e BETTER_AUTH_SECRET=… \
+  hypercube
+```
+
+## First account
+
+Visit `/signup` and register. The first account becomes the admin; signups
+close automatically once it exists.
+
+## Updating
+
+```bash
+git pull
+pnpm install
+pnpm --filter console build
+```
+
+Schema migrations run on the next boot. Concurrent instances are safe:
+migrations are serialized with a Postgres advisory lock.

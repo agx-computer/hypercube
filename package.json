@@ -1,6 +1,7 @@
 {
   "name": "hypercube",
   "private": true,
+  "packageManager": "pnpm@10.8.0",
   "scripts": {
     "dev": "pnpm --filter console dev",
     "typecheck": "pnpm -r typecheck"

@@ -1,8 +1,8 @@
 "use client"
 
-import { useState } from "react"
 import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
+import { SubmitButton } from "@/components/submit-button"
 import { Checkbox } from "@/components/ui/checkbox"
 import { Field, FieldGroup, FieldLabel } from "@/components/ui/field"
 import { Input } from "@/components/ui/input"
@@ -33,17 +33,14 @@ export function FieldSheet({
   onOpenChange: (open: boolean) => void
 }) {
   const router = useRouter()
-  const [busy, setBusy] = useState(false)
   const editing = Boolean(field)
 
   async function submit(formData: FormData) {
-    setBusy(true)
     if (editing && field) {
       await updateFieldAction(resourceId, tableSlug, field.name, formData)
     } else {
       await addFieldAction(resourceId, tableSlug, formData)
     }
-    setBusy(false)
     onOpenChange(false)
     router.refresh()
   }
@@ -92,9 +89,7 @@ export function FieldSheet({
             </FieldGroup>
           </div>
           <SheetFooter>
-            <Button type="submit" disabled={busy}>
-              {editing ? "Save" : "Create field"}
-            </Button>
+            <SubmitButton>{editing ? "Save" : "Create field"}</SubmitButton>
             <SheetClose
               render={
                 <Button type="button" variant="outline">

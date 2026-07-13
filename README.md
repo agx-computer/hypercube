@@ -7,13 +7,22 @@ turns it into navigable markdown pages for agents.
 
 ## Run
 
+With Docker, Postgres included:
+
+```bash
+BETTER_AUTH_SECRET=$(openssl rand -base64 32) docker compose up -d
+```
+
+Or from source:
+
 ```bash
 pnpm install
 pnpm dev
 ```
 
-Set `DATABASE_URL` (the instance database) and `BETTER_AUTH_SECRET` in
-`apps/console/.env.local`. The first visit creates the admin account.
+Set `DATABASE_URL` (the application database) and `BETTER_AUTH_SECRET` in
+`apps/console/.env.local` — an empty database is fine, migrations run on
+boot. Sign up at `/signup`; the first account becomes the admin.
 
 ## API
 
@@ -31,7 +40,7 @@ Set `DATABASE_URL` (the instance database) and `BETTER_AUTH_SECRET` in
   the generated API
 - `apps/docs` the documentation site (Fumadocs): what Hypercube is and how
   to self-host
-- `specs/jim.md` the page format: JIM, JS in Markdown
+- `specs/jim.md` the page format: JIM, JavaScript in Markdown
 
 ## Later
 

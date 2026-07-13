@@ -1,5 +1,6 @@
 "use client"
 
+import { useTransition } from "react"
 import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import {
@@ -24,10 +25,13 @@ export function RecordActions({
   onEdit: () => void
 }) {
   const router = useRouter()
+  const [pending, startTransition] = useTransition()
 
-  async function remove() {
-    await deleteRecordAction(resourceId, tableSlug, recordId)
-    router.refresh()
+  function remove() {
+    startTransition(async () => {
+      await deleteRecordAction(resourceId, tableSlug, recordId)
+      router.refresh()
+    })
   }
 
   return (
@@ -43,7 +47,11 @@ export function RecordActions({
           Edit
         </DropdownMenuItem>
         <DropdownMenuSeparator />
-        <DropdownMenuItem variant="destructive" onClick={remove}>
+        <DropdownMenuItem
+          variant="destructive"
+          disabled={pending}
+          onClick={remove}
+        >
           <Trash2Icon />
           Delete
         </DropdownMenuItem>

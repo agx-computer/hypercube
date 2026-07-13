@@ -1,7 +1,8 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useTransition } from "react"
 import { useRouter } from "next/navigation"
+import { toast } from "sonner"
 import type { Column, ColumnDef } from "@tanstack/react-table"
 import type { TableField } from "@hypercube/core/store"
 import { DataTable } from "@/components/data-table"
@@ -107,10 +108,15 @@ export function RecordsTable({
   const [adding, setAdding] = useState(false)
   const [record, setRecord] = useState<Row | undefined>(undefined)
   const [addingRecord, setAddingRecord] = useState(false)
+  const [, startTransition] = useTransition()
 
-  async function removeField(name: string) {
-    await deleteFieldAction(resourceId, tableSlug, name)
-    router.refresh()
+  function removeField(name: string) {
+    const id = toast.loading("Deleting field…")
+    startTransition(async () => {
+      await deleteFieldAction(resourceId, tableSlug, name)
+      toast.dismiss(id)
+      router.refresh()
+    })
   }
 
   const columns: ColumnDef<Row>[] = [

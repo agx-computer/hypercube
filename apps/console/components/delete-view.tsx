@@ -1,9 +1,10 @@
 "use client"
 
+import { useTransition } from "react"
 import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { deleteViewAction } from "@/lib/actions"
-import { Trash2Icon } from "lucide-react"
+import { LoaderCircleIcon, Trash2Icon } from "lucide-react"
 
 export function DeleteView({
   resourceId,
@@ -15,16 +16,24 @@ export function DeleteView({
   viewSlug: string
 }) {
   const router = useRouter()
+  const [pending, startTransition] = useTransition()
   return (
     <Button
       size="sm"
       variant="outline"
-      onClick={async () => {
-        await deleteViewAction(resourceId, tableSlug, viewSlug)
-        router.refresh()
-      }}
+      disabled={pending}
+      onClick={() =>
+        startTransition(async () => {
+          await deleteViewAction(resourceId, tableSlug, viewSlug)
+          router.refresh()
+        })
+      }
     >
-      <Trash2Icon />
+      {pending ? (
+        <LoaderCircleIcon className="animate-spin" />
+      ) : (
+        <Trash2Icon />
+      )}
       Delete view
     </Button>
   )

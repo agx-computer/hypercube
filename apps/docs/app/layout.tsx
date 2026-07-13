@@ -8,7 +8,7 @@ export const metadata: Metadata = {
     default: 'Hypercube',
   },
   description:
-    'A context transform engine: connect a data source, get navigable markdown pages for agents.',
+    'A context transform engine that turns any data source into navigable markdown pages for agents.',
 };
 
 export default function Layout({ children }: LayoutProps<'/'>) {

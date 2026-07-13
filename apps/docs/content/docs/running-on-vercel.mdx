@@ -1,0 +1,30 @@
+---
+title: Running on Vercel
+description: Deploy Hypercube to Vercel with a managed Postgres.
+---
+
+Hypercube runs well on Vercel: it is a single Next.js app, and the instance
+database can live on any managed Postgres (Supabase, Neon, and similar).
+
+## Setup
+
+1. Import the repository into Vercel and set **Root Directory** to
+   `apps/console`.
+2. Add `DATABASE_URL` and `BETTER_AUTH_SECRET` as
+   [environment variables](/environment-variables).
+3. Deploy, then visit `/signup`. The first account becomes the admin.
+
+Migrations run automatically on boot; an empty database is fine. With the
+Git integration set up, pushes to `main` deploy automatically.
+
+## Choosing the connection string
+
+- Use a **pooled** connection string: serverless functions open many
+  short-lived connections. On Supabase that is the **Session Pooler**;
+  transaction pooling (port 6543) breaks prepared statements.
+- Use an endpoint reachable over **IPv4**. Vercel functions cannot reach
+  IPv6-only hosts such as Supabase's direct `db.<ref>.supabase.co` address —
+  connections fail with `ENOTFOUND`.
+
+The same applies to databases you connect as dynamic resources: give
+Hypercube pooled, IPv4-reachable connection strings.

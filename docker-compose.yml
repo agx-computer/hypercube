@@ -1,0 +1,32 @@
+services:
+  hypercube:
+    build:
+      context: .
+      dockerfile: apps/console/Dockerfile
+    ports:
+      - "3000:3000"
+    environment:
+      DATABASE_URL: postgres://hypercube:hypercube@db:5432/hypercube
+      BETTER_AUTH_SECRET: ${BETTER_AUTH_SECRET:-change-me-please}
+    depends_on:
+      db:
+        condition: service_healthy
+    restart: always
+
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: hypercube
+      POSTGRES_PASSWORD: hypercube
+      POSTGRES_DB: hypercube
+    volumes:
+      - hypercube-db:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U hypercube"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    restart: always
+
+volumes:
+  hypercube-db:

@@ -1,0 +1,33 @@
+---
+title: Environment variables
+description: Everything Hypercube reads from the environment.
+---
+
+Hypercube reads two variables. In development they live in
+`apps/console/.env.local`; on a host, set them on the deployment.
+
+## `DATABASE_URL`
+
+**Required.** Postgres connection string for the application database — the
+database Hypercube stores its own state in: resources, cached tables and
+records, cubes, pages, and user accounts.
+
+```bash
+DATABASE_URL=postgres://user:pass@host:5432/db
+```
+
+- The database user needs DDL privileges; Hypercube creates and migrates its
+  schema automatically on boot.
+- On serverless hosts, use a pooled connection string (for Supabase, the
+  Session Pooler) reachable over IPv4.
+- An empty database is fine — everything is created on first boot.
+
+## `BETTER_AUTH_SECRET`
+
+**Required.** Signs sessions for the console's authentication. Generate one:
+
+```bash
+openssl rand -base64 32
+```
+
+Changing it invalidates existing sessions.

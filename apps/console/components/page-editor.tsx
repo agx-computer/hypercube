@@ -44,6 +44,7 @@ import {
 import { cn } from "@/lib/utils"
 import {
   EyeIcon,
+  LoaderCircleIcon,
   MoreHorizontalIcon,
   PencilIcon,
   PlusIcon,
@@ -224,6 +225,7 @@ export function PageEditor({
               onClick={save}
               disabled={busy || !dirty || (isNew && !name.trim())}
             >
+              {busy ? <LoaderCircleIcon className="animate-spin" /> : null}
               {!isNew && !dirty ? "Saved" : "Save"}
             </Button>
             {isNew || !pageSlug ? null : (

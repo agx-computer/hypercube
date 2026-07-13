@@ -1,3 +1,18 @@
 {
-  "pages": ["introduction", "self-hosting"]
+  "pages": [
+    "introduction",
+    "installation",
+    "---Guides---",
+    "connecting-resources",
+    "building-cubes",
+    "writing-pages",
+    "serving-to-agents",
+    "---Hosting---",
+    "environment-variables",
+    "running-on-vercel",
+    "running-on-supabase",
+    "---Reference---",
+    "api",
+    "jim-specification"
+  ]
 }

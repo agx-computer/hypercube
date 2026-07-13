@@ -2,7 +2,7 @@ import Link from "next/link"
 import { notFound } from "next/navigation"
 import { ensureStore, getResource } from "@hypercube/core/store"
 import { SiteHeader } from "@/components/site-header"
-import { Button } from "@/components/ui/button"
+import { SubmitButton } from "@/components/submit-button"
 import { Input } from "@/components/ui/input"
 import { SettingsRow } from "@/components/settings-row"
 import { DeleteResource } from "@/components/delete-resource"
@@ -91,9 +91,9 @@ export default async function EditResource({
                   />
                 </SettingsRow>
                 <div className="bg-muted/40 flex justify-end px-5 py-3">
-                  <Button type="submit" size="sm">
+                  <SubmitButton size="sm">
                     Save & sync
-                  </Button>
+                  </SubmitButton>
                 </div>
               </form>
             </section>
@@ -112,9 +112,9 @@ export default async function EditResource({
                     <Input name="name" defaultValue={resource.name} required className="w-72" />
                   </SettingsRow>
                   <div className="bg-muted/40 flex justify-end px-5 py-3">
-                    <Button type="submit" size="sm">
+                    <SubmitButton size="sm">
                       Save changes
-                    </Button>
+                    </SubmitButton>
                   </div>
                 </form>
               </section>

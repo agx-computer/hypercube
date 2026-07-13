@@ -1,0 +1,52 @@
+---
+title: Connecting resources
+description: Bring data into Hypercube — static tables or a live Postgres.
+---
+
+A **resource** is a data source. It holds **tables**; a table has fields and
+records. Pages reference this data as
+`resources["Resource name"]["table"]`.
+
+There are two kinds.
+
+## Static resources
+
+Tables you define and fill by hand.
+
+1. **New resource**, pick **Static**, name it.
+2. **New table** — a table starts empty; add fields from the grid (text,
+   number, boolean, or date) and records right in place.
+
+Static data lives in the application database and is editable any time: fields
+can be renamed or removed (records follow), records edited row by row.
+
+## Dynamic resources
+
+A Postgres database Hypercube connects to and syncs.
+
+1. **New resource**, pick **Dynamic**, name it, paste the Postgres
+   connection URL and schema (defaults to `public`).
+2. On create, Hypercube syncs immediately: it introspects the schema and
+   stores every table's structure plus its **first 20 rows** in the instance
+   database.
+
+Pages and the API read from that cache — the connected database is only
+touched when you sync. Press **Sync** on the resource page to refresh after
+the schema or data changes; tables that disappeared from the database are
+removed. Synced tables are read-only in the console.
+
+The connection lives under **Edit → Database**; saving there re-syncs with
+the new connection.
+
+Use a pooled, IPv4-reachable connection string — the same
+[rules](/running-on-vercel#choosing-the-connection-string) as the instance
+database.
+
+## Views
+
+A **view** is a saved transform on a table: a field selection (with optional
+relabeling), filters, and a sort. Create one from the table's tab bar.
+
+## Next
+
+Organize the data into pages: [Building cubes](/building-cubes).

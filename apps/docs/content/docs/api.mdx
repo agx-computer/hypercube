@@ -1,0 +1,27 @@
+---
+title: API
+description: The HTTP endpoints a cube is served on.
+---
+
+All endpoints are `GET` and return JSON errors (`{ "error": "…" }`) with
+status 404 for unknown ids and 422 when a page fails to render.
+
+Endpoints are currently unauthenticated: anyone with a cube's id can read it.
+API tokens are on the roadmap.
+
+Endpoints return markdown by default; send `Accept: application/json` for a
+JSON view of the same page.
+
+## `GET /c/:cube`
+
+The cube's entry page as markdown. `:cube` is the cube's id, shown in the
+console.
+
+As JSON: `{ cube, name, entry, pages: [{ slug, name }], data }` where `data`
+holds the resources the entry page references.
+
+## `GET /c/:cube/:page`
+
+A specific page of the cube, by slug.
+
+As JSON: `{ cube, page, name, pages, data }`.

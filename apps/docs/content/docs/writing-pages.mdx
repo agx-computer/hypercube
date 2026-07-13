@@ -1,0 +1,63 @@
+---
+title: Writing pages
+description: JIM, the page format — markdown holding JavaScript expressions.
+---
+
+Pages are JIM documents (JavaScript in Markdown): markdown in which `{{ … }}` holds a
+JavaScript expression. Rendering evaluates each expression against your
+resources and splices the result into the text. The output is markdown.
+
+```text
+# Photos
+
+{{ resources["Travel"]["photos"].map(p => `![${p.location}](${p.image})`).join("\n") }}
+```
+
+## Evaluation rules
+
+- `{{ … }}` contains a single JavaScript expression. Statements need an IIFE.
+- A string result is spliced as-is; `null` and `undefined` become nothing; an
+  array becomes its elements' text concatenated (use `join("\n")` for lists);
+  any other value becomes `String(value)`.
+- Everything outside `{{ … }}` passes through untouched. `\{{` produces a
+  literal `{{`.
+- An evaluation error fails the render with a message naming the failing
+  expression and its line.
+
+## Variables
+
+A page may open with a block fenced by `---` lines. The block is JavaScript,
+run once per render. Its top-level `const`, `let` and `var` declarations
+become bindings for the body's expressions; declarations may reference each
+other. The Variables panel in the editor edits this block.
+
+```text
+---
+const photos = resources["Travel"]["photos"].filter(p => p.country === "New Zealand")
+const count = photos.length
+---
+# Photos ({{ count }})
+```
+
+## What is in scope
+
+- `resources` — your data. `resources["Resource name"]["table"]` is an array
+  of rows shaped `{ id, …fields }`. Tables are addressable by name or slug,
+  resources by name or id.
+- `table(rows, columns?)` — renders rows as a markdown table. `columns` is a
+  comma-separated string (`"name, price"`) or an array; omitted, it takes the
+  first row's fields.
+- `cube` — `{ name, uuid }` of the cube being rendered.
+- `page` — `{ name, slug }` of the current page.
+- `pages` — the cube's other pages, `[{ name, slug, url }]`.
+- `api` — `{ self, cube }`, the URLs this page and the cube are served on.
+
+## Links between pages
+
+A markdown link to a page's slug, such as `[Orders](orders)`, resolves to
+that page's full URL when the cube is served — agents can follow links from
+the entry page through the whole cube.
+
+## Next
+
+Hand the cube to an agent: [Serving to agents](/serving-to-agents).

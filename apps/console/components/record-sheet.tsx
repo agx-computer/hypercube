@@ -1,9 +1,9 @@
 "use client"
 
-import { useState } from "react"
 import { useRouter } from "next/navigation"
 import type { TableField } from "@hypercube/core/store"
 import { Button } from "@/components/ui/button"
+import { SubmitButton } from "@/components/submit-button"
 import { Checkbox } from "@/components/ui/checkbox"
 import { Field, FieldGroup, FieldLabel } from "@/components/ui/field"
 import { Input } from "@/components/ui/input"
@@ -39,17 +39,14 @@ export function RecordSheet({
   onOpenChange: (open: boolean) => void
 }) {
   const router = useRouter()
-  const [busy, setBusy] = useState(false)
   const editing = Boolean(record)
 
   async function submit(formData: FormData) {
-    setBusy(true)
     if (editing && record) {
       await updateRecordAction(resourceId, tableSlug, record.id, formData)
     } else {
       await createRecordAction(resourceId, tableSlug, formData)
     }
-    setBusy(false)
     onOpenChange(false)
     router.refresh()
   }
@@ -102,9 +99,7 @@ export function RecordSheet({
             </FieldGroup>
           </div>
           <SheetFooter>
-            <Button type="submit" disabled={busy}>
-              {editing ? "Save" : "Create record"}
-            </Button>
+            <SubmitButton>{editing ? "Save" : "Create record"}</SubmitButton>
             <SheetClose
               render={
                 <Button type="button" variant="outline">

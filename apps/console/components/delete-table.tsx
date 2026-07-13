@@ -1,6 +1,6 @@
 "use client"
 
-import { Button } from "@/components/ui/button"
+import { SubmitButton } from "@/components/submit-button"
 import { deleteTableAction } from "@/lib/actions"
 
 export function DeleteTable({
@@ -13,9 +13,9 @@ export function DeleteTable({
   const action = deleteTableAction.bind(null, resourceId, tableSlug)
   return (
     <form action={action}>
-      <Button type="submit" variant="destructive" size="sm">
+      <SubmitButton variant="destructive" size="sm">
         Delete table
-      </Button>
+      </SubmitButton>
     </form>
   )
 }

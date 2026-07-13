@@ -1,7 +1,7 @@
 import { notFound } from "next/navigation"
 import { ensureStore, getResource } from "@hypercube/core/store"
 import { SiteHeader } from "@/components/site-header"
-import { Button } from "@/components/ui/button"
+import { SubmitButton } from "@/components/submit-button"
 import {
   Card,
   CardContent,
@@ -49,7 +49,7 @@ export default async function NewTablePage({
                   />
                 </Field>
                 <Field>
-                  <Button type="submit">Create table</Button>
+                  <SubmitButton>Create table</SubmitButton>
                 </Field>
               </FieldGroup>
             </form>

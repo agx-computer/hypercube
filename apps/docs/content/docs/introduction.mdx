@@ -1,6 +1,6 @@
 ---
 title: Introduction
-description: A context transform engine that turns data sources into navigable markdown pages for agents.
+description: A context transform engine that turns any data source into navigable markdown pages for agents.
 ---
 
 Hypercube connects to your data and serves it as markdown pages an agent can
@@ -10,7 +10,7 @@ read and navigate like a small website.
 
 - **Resource** — a data source. Either **static** (tables you define and fill
   by hand) or **dynamic** (a Postgres database Hypercube syncs: table schemas
-  plus sample rows, cached in the instance database).
+  plus sample rows, cached in the application database).
 - **Table** — a named collection of fields and records inside a resource.
 - **Cube** — a set of markdown pages, one of them the entry page.
 - **Page** — a JIM document: markdown in which `{{ … }}` holds a JavaScript
@@ -29,5 +29,8 @@ can follow them from the entry page through the whole cube.
 
 ## Where to go
 
-- [Self-hosting](/self-hosting) — run Hypercube on your own
-  infrastructure.
+- [Installation](/installation) — run Hypercube from source or with Docker.
+- [Connecting resources](/connecting-resources) — bring your data in.
+- [Building cubes](/building-cubes) — turn it into navigable pages.
+- [Writing pages](/writing-pages) — JIM, the page format.
+- [API](/api) — the endpoints a cube is served on.

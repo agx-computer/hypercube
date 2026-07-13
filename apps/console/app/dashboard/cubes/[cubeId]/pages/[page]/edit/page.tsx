@@ -1,7 +1,7 @@
 import { notFound } from "next/navigation"
 import { ensureStore, getCube, getPage } from "@hypercube/core/store"
 import { SiteHeader } from "@/components/site-header"
-import { Button } from "@/components/ui/button"
+import { SubmitButton } from "@/components/submit-button"
 import { Input } from "@/components/ui/input"
 import { SettingsRow } from "@/components/settings-row"
 import { DeletePageButton } from "@/components/delete-page"
@@ -52,9 +52,9 @@ export default async function EditPage({
                 <code className="bg-muted px-2 py-1 text-xs">{page.slug}</code>
               </SettingsRow>
               <div className="bg-muted/40 flex justify-end px-5 py-3">
-                <Button type="submit" size="sm">
+                <SubmitButton size="sm">
                   Save changes
-                </Button>
+                </SubmitButton>
               </div>
             </form>
           </section>

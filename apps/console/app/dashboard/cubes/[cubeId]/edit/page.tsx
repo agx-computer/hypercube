@@ -1,7 +1,7 @@
 import { notFound } from "next/navigation"
 import { ensureStore, getCube } from "@hypercube/core/store"
 import { SiteHeader } from "@/components/site-header"
-import { Button } from "@/components/ui/button"
+import { SubmitButton } from "@/components/submit-button"
 import { Input } from "@/components/ui/input"
 import { SettingsRow } from "@/components/settings-row"
 import { DeleteCubeButton } from "@/components/delete-cube"
@@ -50,9 +50,9 @@ export default async function EditCube({
                 />
               </SettingsRow>
               <div className="bg-muted/40 flex justify-end px-5 py-3">
-                <Button type="submit" size="sm">
+                <SubmitButton size="sm">
                   Save changes
-                </Button>
+                </SubmitButton>
               </div>
             </form>
           </section>

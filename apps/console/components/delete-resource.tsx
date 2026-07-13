@@ -1,5 +1,7 @@
 "use client"
 
+import { useTransition } from "react"
+import { toast } from "sonner"
 import { Button } from "@/components/ui/button"
 import {
   DropdownMenu,
@@ -7,6 +9,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
+import { SubmitButton } from "@/components/submit-button"
 import { deleteResourceAction } from "@/lib/actions"
 import { MoreHorizontalIcon, Trash2Icon } from "lucide-react"
 
@@ -14,14 +17,15 @@ export function DeleteResource({ resourceId }: { resourceId: string }) {
   const action = deleteResourceAction.bind(null, resourceId)
   return (
     <form action={action}>
-      <Button type="submit" variant="destructive" size="sm">
+      <SubmitButton variant="destructive" size="sm">
         Delete resource
-      </Button>
+      </SubmitButton>
     </form>
   )
 }
 
 export function DeleteResourceMenu({ resourceId }: { resourceId: string }) {
+  const [pending, startTransition] = useTransition()
   return (
     <DropdownMenu>
       <DropdownMenuTrigger render={<Button size="icon-sm" variant="ghost" />}>
@@ -30,7 +34,14 @@ export function DeleteResourceMenu({ resourceId }: { resourceId: string }) {
       <DropdownMenuContent align="end">
         <DropdownMenuItem
           variant="destructive"
-          onClick={() => deleteResourceAction(resourceId)}
+          disabled={pending}
+          onClick={() => {
+            const id = toast.loading("Deleting…")
+            startTransition(async () => {
+              await deleteResourceAction(resourceId)
+              toast.dismiss(id)
+            })
+          }}
         >
           <Trash2Icon />
           Delete resource
