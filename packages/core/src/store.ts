@@ -115,6 +115,8 @@ async function doEnsure(db: Db): Promise<void> {
   // is transaction-scoped so the store stays safe behind poolers running
   // in transaction mode.
   await db.transaction().execute(async (trx) => {
+    await sql`set local statement_timeout = 0`.execute(trx)
+    await sql`set local lock_timeout = 0`.execute(trx)
     await sql`select pg_advisory_xact_lock(4919283)`.execute(trx)
     await ensureSchema(trx)
   })
