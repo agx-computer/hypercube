@@ -1,7 +1,12 @@
 "use client"
 
 import Link from "next/link"
-import { useRouter } from "next/navigation"
+import { usePathname, useRouter } from "next/navigation"
+import {
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from "@/components/ui/collapsible"
 import {
   SidebarGroup,
   SidebarGroupContent,
@@ -10,6 +15,9 @@ import {
   SidebarMenuAction,
   SidebarMenuButton,
   SidebarMenuItem,
+  SidebarMenuSub,
+  SidebarMenuSubButton,
+  SidebarMenuSubItem,
 } from "@/components/ui/sidebar"
 import {
   DropdownMenu,
@@ -20,12 +28,28 @@ import {
 import { deleteCubeAction, deleteResourceAction } from "@/lib/actions"
 import {
   BoxIcon,
+  ChevronRightIcon,
   DatabaseIcon,
   EllipsisVerticalIcon,
+  FileTextIcon,
   PencilIcon,
   PlusIcon,
+  TableIcon,
   Trash2Icon,
 } from "lucide-react"
+
+export interface CubeNav {
+  uuid: string
+  name: string
+  pages: { slug: string; name: string; entry: boolean }[]
+}
+
+export interface ResourceNav {
+  uuid: string
+  name: string
+  source: string
+  tables: { slug: string; name: string }[]
+}
 
 function ItemMenu({
   editHref,
@@ -36,7 +60,9 @@ function ItemMenu({
 }) {
   return (
     <DropdownMenu>
-      <DropdownMenuTrigger render={<SidebarMenuAction showOnHover />}>
+      <DropdownMenuTrigger
+        render={<SidebarMenuAction showOnHover className="right-6" />}
+      >
         <EllipsisVerticalIcon />
         <span className="sr-only">Menu</span>
       </DropdownMenuTrigger>
@@ -54,14 +80,43 @@ function ItemMenu({
   )
 }
 
+function CollapseToggle() {
+  return (
+    <CollapsibleTrigger
+      render={
+        <SidebarMenuAction className="[&>svg]:transition-transform [&[data-panel-open]>svg]:rotate-90" />
+      }
+    >
+      <ChevronRightIcon />
+      <span className="sr-only">Toggle</span>
+    </CollapsibleTrigger>
+  )
+}
+
+function NewSubItem({ href, label }: { href: string; label: string }) {
+  return (
+    <SidebarMenuSubItem>
+      <SidebarMenuSubButton
+        render={<Link href={href} />}
+        className="text-muted-foreground [&>svg]:text-muted-foreground"
+      >
+        <PlusIcon />
+        <span>{label}</span>
+      </SidebarMenuSubButton>
+    </SidebarMenuSubItem>
+  )
+}
+
 export function NavMain({
   resources,
   cubes,
 }: {
-  resources: { uuid: string; name: string }[]
-  cubes: { uuid: string; name: string }[]
+  resources: ResourceNav[]
+  cubes: CubeNav[]
 }) {
   const router = useRouter()
+  const pathname = usePathname()
+
   return (
     <>
       <SidebarGroup>
@@ -78,24 +133,52 @@ export function NavMain({
                 <span>New cube</span>
               </SidebarMenuButton>
             </SidebarMenuItem>
-            {cubes.map((c) => (
-              <SidebarMenuItem key={c.uuid}>
-                <SidebarMenuButton
-                  render={<Link href={`/dashboard/cubes/${c.uuid}`} />}
-                  tooltip={c.name}
+            {cubes.map((cube) => {
+              const base = `/dashboard/cubes/${cube.uuid}`
+              return (
+                <Collapsible
+                  key={cube.uuid}
+                  defaultOpen={pathname.startsWith(base)}
+                  render={<SidebarMenuItem />}
                 >
-                  <BoxIcon />
-                  <span>{c.name}</span>
-                </SidebarMenuButton>
-                <ItemMenu
-                  editHref={`/dashboard/cubes/${c.uuid}/edit`}
-                  onDelete={async () => {
-                    await deleteCubeAction(c.uuid)
-                    router.refresh()
-                  }}
-                />
-              </SidebarMenuItem>
-            ))}
+                  <SidebarMenuButton
+                    render={<Link href={base} />}
+                    tooltip={cube.name}
+                    isActive={pathname === base}
+                  >
+                    <BoxIcon />
+                    <span>{cube.name}</span>
+                  </SidebarMenuButton>
+                  <ItemMenu
+                    editHref={`${base}/edit`}
+                    onDelete={async () => {
+                      await deleteCubeAction(cube.uuid)
+                      router.refresh()
+                    }}
+                  />
+                  <CollapseToggle />
+                  <CollapsibleContent>
+                    <SidebarMenuSub>
+                      <NewSubItem href={`${base}/pages/new`} label="New page" />
+                      {cube.pages.map((page) => {
+                        const href = `${base}/pages/${page.slug}`
+                        return (
+                          <SidebarMenuSubItem key={page.slug}>
+                            <SidebarMenuSubButton
+                              render={<Link href={href} />}
+                              isActive={pathname === href}
+                            >
+                              <FileTextIcon />
+                              <span>{page.entry ? "Entry" : page.name}</span>
+                            </SidebarMenuSubButton>
+                          </SidebarMenuSubItem>
+                        )
+                      })}
+                    </SidebarMenuSub>
+                  </CollapsibleContent>
+                </Collapsible>
+              )
+            })}
           </SidebarMenu>
         </SidebarGroupContent>
       </SidebarGroup>
@@ -114,24 +197,57 @@ export function NavMain({
                 <span>New resource</span>
               </SidebarMenuButton>
             </SidebarMenuItem>
-            {resources.map((r) => (
-              <SidebarMenuItem key={r.uuid}>
-                <SidebarMenuButton
-                  render={<Link href={`/dashboard/resources/${r.uuid}`} />}
-                  tooltip={r.name}
+            {resources.map((resource) => {
+              const base = `/dashboard/resources/${resource.uuid}`
+              return (
+                <Collapsible
+                  key={resource.uuid}
+                  defaultOpen={pathname.startsWith(base)}
+                  render={<SidebarMenuItem />}
                 >
-                  <DatabaseIcon />
-                  <span>{r.name}</span>
-                </SidebarMenuButton>
-                <ItemMenu
-                  editHref={`/dashboard/resources/${r.uuid}/edit`}
-                  onDelete={async () => {
-                    await deleteResourceAction(r.uuid)
-                    router.refresh()
-                  }}
-                />
-              </SidebarMenuItem>
-            ))}
+                  <SidebarMenuButton
+                    render={<Link href={base} />}
+                    tooltip={resource.name}
+                    isActive={pathname === base}
+                  >
+                    <DatabaseIcon />
+                    <span>{resource.name}</span>
+                  </SidebarMenuButton>
+                  <ItemMenu
+                    editHref={`${base}/edit`}
+                    onDelete={async () => {
+                      await deleteResourceAction(resource.uuid)
+                      router.refresh()
+                    }}
+                  />
+                  <CollapseToggle />
+                  <CollapsibleContent>
+                    <SidebarMenuSub>
+                      {resource.source === "internal" ? (
+                        <NewSubItem
+                          href={`${base}/tables/new`}
+                          label="New table"
+                        />
+                      ) : null}
+                      {resource.tables.map((table) => {
+                        const href = `${base}/tables/${table.slug}`
+                        return (
+                          <SidebarMenuSubItem key={table.slug}>
+                            <SidebarMenuSubButton
+                              render={<Link href={href} />}
+                              isActive={pathname === href}
+                            >
+                              <TableIcon />
+                              <span>{table.name}</span>
+                            </SidebarMenuSubButton>
+                          </SidebarMenuSubItem>
+                        )
+                      })}
+                    </SidebarMenuSub>
+                  </CollapsibleContent>
+                </Collapsible>
+              )
+            })}
           </SidebarMenu>
         </SidebarGroupContent>
       </SidebarGroup>

@@ -3,7 +3,7 @@
 import * as React from "react"
 import Link from "next/link"
 import Image from "next/image"
-import { NavMain } from "@/components/nav-main"
+import { NavMain, type CubeNav, type ResourceNav } from "@/components/nav-main"
 import { NavUser } from "@/components/nav-user"
 import {
   Sidebar,
@@ -21,8 +21,8 @@ export function AppSidebar({
   user,
   ...props
 }: {
-  resources: { uuid: string; name: string }[]
-  cubes: { uuid: string; name: string }[]
+  resources: ResourceNav[]
+  cubes: CubeNav[]
   user: { name: string; email: string }
 } & React.ComponentProps<typeof Sidebar>) {
   return (
