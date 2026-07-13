@@ -25,10 +25,12 @@ Set `DATABASE_URL` (the instance database) and `BETTER_AUTH_SECRET` in
 
 ## Layout
 
-- `packages/core` the engine: schema model, policy, Postgres introspection,
-  query runtime, instance store
+- `packages/core` the engine: schema model, Postgres introspection, query
+  runtime, instance store, JIM
 - `apps/console` the product: Next.js console (better-auth, shadcn/ui) and
   the generated API
+- `apps/docs` the documentation site (Fumadocs): what Hypercube is and how
+  to self-host
 - `specs/jim.md` the page format: JIM, JS in Markdown
 
 ## Later

@@ -1,0 +1,111 @@
+---
+title: Self-hosting
+description: Run Hypercube on your own infrastructure.
+---
+
+Hypercube is a single Next.js app backed by one Postgres database, the
+**instance database**. There is nothing else to operate: no object storage,
+no background workers, no queues.
+
+The instance database holds your resources, cached tables and records, cubes,
+pages, and user accounts.
+
+## What you need
+
+- Node.js 20 or newer, and [pnpm](https://pnpm.io)
+- A Postgres database
+
+The database user needs DDL privileges: Hypercube creates and migrates its own
+`hypercube` schema automatically on boot.
+
+## 1. Clone and install
+
+```bash
+git clone https://github.com/agx-computer/hypercube.git
+cd hypercube
+pnpm install
+```
+
+## 2. Configure the environment
+
+Create `apps/console/.env.local`:
+
+```bash
+DATABASE_URL=postgres://user:pass@host:5432/db
+BETTER_AUTH_SECRET=…
+```
+
+- `DATABASE_URL` points at the instance database. On serverless hosts use a
+  pooled connection string — for Supabase that is the **Session Pooler**
+  (transaction pooling breaks prepared statements). Prefer endpoints reachable
+  over IPv4; some platforms cannot reach IPv6-only database hosts.
+- `BETTER_AUTH_SECRET` signs sessions. Generate one with
+  `openssl rand -base64 32`.
+
+## 3. Create the auth tables
+
+The `hypercube` schema migrates itself, but the authentication tables
+(`user`, `session`, `account`, `verification`) are created once with the
+better-auth CLI:
+
+```bash
+cd apps/console
+pnpm dlx @better-auth/cli migrate
+```
+
+The CLI reads `lib/auth.ts` and connects using the `DATABASE_URL` from
+`.env.local`.
+
+## 4. Run
+
+Development:
+
+```bash
+pnpm dev
+```
+
+Production:
+
+```bash
+pnpm --filter console build
+pnpm --filter console start
+```
+
+The console listens on port 3000.
+
+## 5. Create the admin account
+
+Visit `/signup` and register. The first account becomes the admin; signups
+close automatically once it exists.
+
+## Deploying to Vercel
+
+1. Import the repository and set **Root Directory** to `apps/console`.
+2. Add `DATABASE_URL` and `BETTER_AUTH_SECRET` as environment variables.
+3. Run the auth-table migration once from your machine against the production
+   `DATABASE_URL` (step 3 above).
+4. Deploy, then visit `/signup` to claim the admin account.
+
+With the Git integration set up, pushes to `main` deploy automatically.
+
+## Updating
+
+Pull, install, rebuild:
+
+```bash
+git pull
+pnpm install
+pnpm --filter console build
+```
+
+Schema migrations run automatically on the next boot. Concurrent instances
+are safe: migrations are serialized with a Postgres advisory lock.
+
+## Operational notes
+
+- Dynamic resources need the host to open outbound TCP connections to the
+  connected databases. A sync stores each table's schema and its first 20
+  rows in the instance database; pages and the API read from that cache, so
+  connected databases are only touched when you sync.
+- Connection strings of connected databases are stored in the instance
+  database.
