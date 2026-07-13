@@ -1,31 +1,32 @@
 import { notFound } from "next/navigation"
-import Link from "next/link"
-import { ensureStore, getResource } from "@hypercube/core/store"
+import { ensureStore, getResource, getTable } from "@hypercube/core/store"
 import { SiteHeader } from "@/components/site-header"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { SettingsRow } from "@/components/settings-row"
-import { DeleteResource } from "@/components/delete-resource"
-import { updateResourceAction } from "@/lib/actions"
+import { DeleteTable } from "@/components/delete-table"
+import { updateTableMetaAction } from "@/lib/actions"
 import { instanceDb } from "@/lib/db"
 
 export const dynamic = "force-dynamic"
 
-export default async function EditResource({
+export default async function EditTablePage({
   params,
 }: {
-  params: Promise<{ slug: string }>
+  params: Promise<{ resourceId: string; table: string }>
 }) {
-  const { slug } = await params
+  const { resourceId, table: tableSlug } = await params
   const db = instanceDb()
   await ensureStore(db)
-  const resource = await getResource(db, slug)
-  if (!resource) notFound()
-  const save = updateResourceAction.bind(null, resource.slug)
+  const resource = await getResource(db, resourceId)
+  if (!resource || resource.source !== "internal") notFound()
+  const table = await getTable(db, resource.id, tableSlug)
+  if (!table) notFound()
+  const save = updateTableMetaAction.bind(null, resource.uuid, table.slug)
 
   return (
     <>
-      <SiteHeader title={`${resource.name} / Edit`} />
+      <SiteHeader title={`${resource.name} / ${table.name} / Edit`} />
       <div className="flex flex-1 gap-8 p-4 md:p-8">
         <nav className="w-40 shrink-0">
           <div className="bg-muted text-foreground block px-3 py-2 text-sm font-medium">
@@ -36,21 +37,19 @@ export default async function EditResource({
           <section>
             <h2 className="text-lg font-semibold">General</h2>
             <p className="text-muted-foreground mb-4 text-sm">
-              Name and describe this resource.
+              Name this table.
             </p>
             <form action={save} className="border-border border">
               <SettingsRow label="Name" description="Displayed in the dashboard.">
-                <Input name="name" defaultValue={resource.name} required className="w-72" />
-              </SettingsRow>
-              <SettingsRow label="Description" description="A short summary.">
                 <Input
-                  name="description"
-                  defaultValue={resource.description ?? ""}
+                  name="name"
+                  defaultValue={table.name}
+                  required
                   className="w-72"
                 />
               </SettingsRow>
-              <SettingsRow label="Slug" description="Reference in the API path.">
-                <code className="bg-muted px-2 py-1 text-xs">{resource.slug}</code>
+              <SettingsRow label="Slug" description="Reference in URLs and pages.">
+                <code className="bg-muted px-2 py-1 text-xs">{table.slug}</code>
               </SettingsRow>
               <div className="bg-muted/40 flex justify-end px-5 py-3">
                 <Button type="submit" size="sm">
@@ -65,14 +64,14 @@ export default async function EditResource({
               Danger zone
             </h2>
             <p className="text-muted-foreground mb-4 text-sm">
-              Deleting a resource is permanent.
+              Deleting a table is permanent.
             </p>
             <div className="border-destructive/40 border">
               <SettingsRow
-                label="Delete resource"
-                description="Remove this resource, its records, views, and cubes."
+                label="Delete table"
+                description="Remove this table, its records, and views."
               >
-                <DeleteResource slug={resource.slug} />
+                <DeleteTable resourceId={resource.uuid} tableSlug={table.slug} />
               </SettingsRow>
             </div>
           </section>

@@ -18,17 +18,19 @@ import { Field, FieldLabel } from "@/components/ui/field"
 import { createViewAction } from "@/lib/actions"
 import { PlusIcon } from "lucide-react"
 
-export function ResourceTabs({
-  resourceSlug,
+export function TableTabs({
+  resourceId,
+  tableSlug,
   views,
 }: {
-  resourceSlug: string
+  resourceId: string
+  tableSlug: string
   views: { slug: string; name: string }[]
 }) {
   const pathname = usePathname()
   const [open, setOpen] = useState(false)
-  const base = `/dashboard/resources/${resourceSlug}`
-  const create = createViewAction.bind(null, resourceSlug)
+  const base = `/dashboard/resources/${resourceId}/tables/${tableSlug}`
+  const create = createViewAction.bind(null, resourceId, tableSlug)
 
   const tab = (href: string, label: string, active: boolean) => (
     <Link

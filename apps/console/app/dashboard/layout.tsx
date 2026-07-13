@@ -1,5 +1,6 @@
 import type { ReactNode } from "react"
 import { AppSidebar } from "@/components/app-sidebar"
+import { Toaster } from "@/components/ui/sonner"
 import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar"
 import { ensureStore, listCubes, listResources } from "@hypercube/core/store"
 import { instanceDb } from "@/lib/db"
@@ -27,14 +28,15 @@ export default async function DashboardLayout({
       }
     >
       <AppSidebar
-        resources={resources.map((r) => ({ slug: r.slug, name: r.name }))}
-        cubes={cubes.map((c) => ({ slug: c.slug, name: c.name }))}
+        resources={resources.map((r) => ({ uuid: r.uuid, name: r.name }))}
+        cubes={cubes.map((c) => ({ uuid: c.uuid, name: c.name }))}
         user={{
           name: session.user.name ?? session.user.email,
           email: session.user.email,
         }}
       />
       <SidebarInset>{children}</SidebarInset>
+      <Toaster />
     </SidebarProvider>
   )
 }

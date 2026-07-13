@@ -3,7 +3,7 @@
 import { useState } from "react"
 import { useRouter } from "next/navigation"
 import type { Column, ColumnDef } from "@tanstack/react-table"
-import type { ResourceField } from "@hypercube/core/store"
+import type { TableField } from "@hypercube/core/store"
 import { DataTable } from "@/components/data-table"
 import { RecordActions } from "@/components/record-actions"
 import { FieldSheet } from "@/components/field-sheet"
@@ -31,6 +31,7 @@ type Row = { id: number; data: Record<string, unknown> }
 function format(value: unknown): string {
   if (value === null || value === undefined) return ""
   if (typeof value === "boolean") return value ? "true" : "false"
+  if (typeof value === "object") return JSON.stringify(value)
   return String(value)
 }
 
@@ -40,7 +41,7 @@ function ColumnHeader({
   onEdit,
   onDelete,
 }: {
-  field: ResourceField
+  field: TableField
   column: Column<Row, unknown>
   onEdit: () => void
   onDelete: () => void
@@ -89,22 +90,26 @@ function ColumnHeader({
 }
 
 export function RecordsTable({
-  resourceSlug,
+  resourceId,
+  tableSlug,
   fields,
   rows,
+  readOnly = false,
 }: {
-  resourceSlug: string
-  fields: ResourceField[]
+  resourceId: string
+  tableSlug: string
+  fields: TableField[]
   rows: Row[]
+  readOnly?: boolean
 }) {
   const router = useRouter()
-  const [editing, setEditing] = useState<ResourceField | undefined>(undefined)
+  const [editing, setEditing] = useState<TableField | undefined>(undefined)
   const [adding, setAdding] = useState(false)
   const [record, setRecord] = useState<Row | undefined>(undefined)
   const [addingRecord, setAddingRecord] = useState(false)
 
   async function removeField(name: string) {
-    await deleteFieldAction(resourceSlug, name)
+    await deleteFieldAction(resourceId, tableSlug, name)
     router.refresh()
   }
 
@@ -114,40 +119,47 @@ export function RecordsTable({
       (f): ColumnDef<Row> => ({
         id: f.name,
         accessorFn: (row) => format(row.data[f.name]),
-        header: ({ column }) => (
-          <ColumnHeader
-            field={f}
-            column={column}
-            onEdit={() => setEditing(f)}
-            onDelete={() => removeField(f.name)}
-          />
-        ),
+        header: readOnly
+          ? f.name
+          : ({ column }) => (
+              <ColumnHeader
+                field={f}
+                column={column}
+                onEdit={() => setEditing(f)}
+                onDelete={() => removeField(f.name)}
+              />
+            ),
       }),
     ),
-    {
-      id: "actions",
-      header: () => (
-        <div className="flex justify-end">
-          <Button
-            size="icon-sm"
-            variant="ghost"
-            onClick={() => setAdding(true)}
-          >
-            <PlusIcon />
-          </Button>
-        </div>
-      ),
-      enableSorting: false,
-      cell: ({ row }) => (
-        <div className="flex justify-end">
-          <RecordActions
-            resourceSlug={resourceSlug}
-            recordId={row.original.id}
-            onEdit={() => setRecord(row.original)}
-          />
-        </div>
-      ),
-    },
+    ...(readOnly
+      ? []
+      : [
+          {
+            id: "actions",
+            header: () => (
+              <div className="flex justify-end">
+                <Button
+                  size="icon-sm"
+                  variant="ghost"
+                  onClick={() => setAdding(true)}
+                >
+                  <PlusIcon />
+                </Button>
+              </div>
+            ),
+            enableSorting: false,
+            cell: ({ row }) => (
+              <div className="flex justify-end">
+                <RecordActions
+                  resourceId={resourceId}
+                  tableSlug={tableSlug}
+                  recordId={row.original.id}
+                  onEdit={() => setRecord(row.original)}
+                />
+              </div>
+            ),
+          } satisfies ColumnDef<Row>,
+        ]),
   ]
 
   return (
@@ -155,12 +167,14 @@ export function RecordsTable({
       {fields.length === 0 ? (
         <div className="flex flex-1 flex-col items-center justify-center gap-4 border border-dashed py-20">
           <p className="text-muted-foreground text-sm">
-            This resource has no fields yet.
+            This table has no fields yet.
           </p>
-          <Button onClick={() => setAdding(true)}>
-            <PlusIcon />
-            Add field
-          </Button>
+          {readOnly ? null : (
+            <Button onClick={() => setAdding(true)}>
+              <PlusIcon />
+              Add field
+            </Button>
+          )}
         </div>
       ) : (
         <DataTable
@@ -170,40 +184,54 @@ export function RecordsTable({
           filterPlaceholder="Search records..."
           empty="No records yet."
           action={
-            <Button size="sm" onClick={() => setAddingRecord(true)}>
-              <PlusIcon />
-              Add record
-            </Button>
+            readOnly ? undefined : (
+              <Button size="sm" onClick={() => setAddingRecord(true)}>
+                <PlusIcon />
+                Add record
+              </Button>
+            )
           }
           disableHeaderSort
           grid
           selectable
         />
       )}
-      {editing ? (
-        <FieldSheet
-          resourceSlug={resourceSlug}
-          field={editing}
-          open={true}
-          onOpenChange={(o) => !o && setEditing(undefined)}
-        />
-      ) : null}
-      <FieldSheet resourceSlug={resourceSlug} open={adding} onOpenChange={setAdding} />
-      {record ? (
-        <RecordSheet
-          resourceSlug={resourceSlug}
-          fields={fields}
-          record={record}
-          open={true}
-          onOpenChange={(o) => !o && setRecord(undefined)}
-        />
-      ) : null}
-      <RecordSheet
-        resourceSlug={resourceSlug}
-        fields={fields}
-        open={addingRecord}
-        onOpenChange={setAddingRecord}
-      />
+      {readOnly ? null : (
+        <>
+          {editing ? (
+            <FieldSheet
+              resourceId={resourceId}
+              tableSlug={tableSlug}
+              field={editing}
+              open={true}
+              onOpenChange={(o) => !o && setEditing(undefined)}
+            />
+          ) : null}
+          <FieldSheet
+            resourceId={resourceId}
+            tableSlug={tableSlug}
+            open={adding}
+            onOpenChange={setAdding}
+          />
+          {record ? (
+            <RecordSheet
+              resourceId={resourceId}
+              tableSlug={tableSlug}
+              fields={fields}
+              record={record}
+              open={true}
+              onOpenChange={(o) => !o && setRecord(undefined)}
+            />
+          ) : null}
+          <RecordSheet
+            resourceId={resourceId}
+            tableSlug={tableSlug}
+            fields={fields}
+            open={addingRecord}
+            onOpenChange={setAddingRecord}
+          />
+        </>
+      )}
     </>
   )
 }

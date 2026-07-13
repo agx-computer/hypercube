@@ -1,7 +1,6 @@
 import { NextResponse } from "next/server"
-import { ensureStore, getResource, listRecords } from "@hypercube/core/store"
+import { ensureStore, getResource, listTables } from "@hypercube/core/store"
 import { instanceDb } from "@/lib/db"
-import { loadRows } from "@/lib/resource-data"
 
 export const dynamic = "force-dynamic"
 
@@ -16,12 +15,16 @@ export async function GET(
   if (!resource) {
     return NextResponse.json({ error: "no such resource" }, { status: 404 })
   }
-  const rows = await loadRows(db, resource, 100)
+  const tables = await listTables(db, resource.id)
   return NextResponse.json({
-    resource: resource.slug,
+    resource: resource.uuid,
     name: resource.name,
-    fields: resource.fields,
-    total: rows.length,
-    rows,
+    source: resource.source,
+    tables: tables.map((t) => ({
+      slug: t.slug,
+      name: t.name,
+      fields: t.fields,
+      synced_at: t.synced_at,
+    })),
   })
 }

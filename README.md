@@ -20,9 +20,11 @@ Set `DATABASE_URL` (the instance database) and `BETTER_AUTH_SECRET` in
 
 ## API
 
-- `GET /api/c/:slug` the cube: exposed entities, fields, relations
-- `GET /api/c/:slug/:entity?page=1&pageSize=25` rows, policy filtered
-- `GET /api/c/:slug/:entity/:key` one row
+- `GET /c/:cube` the cube's entry page as Markdown; JSON with
+  `Accept: application/json`
+- `GET /c/:cube/:page` a specific page of the cube
+- `GET /api/r/:resource` a resource's rows
+- `GET /api/r/:resource/views/:view` rows through a view
 
 ## Layout
 
@@ -30,8 +32,8 @@ Set `DATABASE_URL` (the instance database) and `BETTER_AUTH_SECRET` in
   query runtime, instance store
 - `apps/console` the product: Next.js console (better-auth, shadcn/ui) and
   the generated API
+- `specs/jim.md` the page format: JIM, JS in Markdown
 
 ## Later
 
-The agent surface (pages as navigable Markdown), more connectors, write
-endpoints, API tokens, the schema builder.
+More connectors, write endpoints, API tokens, the schema builder.

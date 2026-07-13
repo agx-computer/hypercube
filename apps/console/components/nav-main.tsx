@@ -22,11 +22,18 @@ import {
   BoxIcon,
   DatabaseIcon,
   EllipsisVerticalIcon,
+  PencilIcon,
   PlusIcon,
   Trash2Icon,
 } from "lucide-react"
 
-function ItemMenu({ onDelete }: { onDelete: () => void }) {
+function ItemMenu({
+  editHref,
+  onDelete,
+}: {
+  editHref: string
+  onDelete: () => void
+}) {
   return (
     <DropdownMenu>
       <DropdownMenuTrigger render={<SidebarMenuAction showOnHover />}>
@@ -34,6 +41,10 @@ function ItemMenu({ onDelete }: { onDelete: () => void }) {
         <span className="sr-only">Menu</span>
       </DropdownMenuTrigger>
       <DropdownMenuContent side="right" align="start">
+        <DropdownMenuItem render={<Link href={editHref} />}>
+          <PencilIcon />
+          Edit
+        </DropdownMenuItem>
         <DropdownMenuItem variant="destructive" onClick={onDelete}>
           <Trash2Icon />
           Delete
@@ -47,47 +58,12 @@ export function NavMain({
   resources,
   cubes,
 }: {
-  resources: { slug: string; name: string }[]
-  cubes: { slug: string; name: string }[]
+  resources: { uuid: string; name: string }[]
+  cubes: { uuid: string; name: string }[]
 }) {
   const router = useRouter()
   return (
     <>
-      <SidebarGroup>
-        <SidebarGroupLabel>Resources</SidebarGroupLabel>
-        <SidebarGroupContent>
-          <SidebarMenu>
-            <SidebarMenuItem>
-              <SidebarMenuButton
-                render={<Link href="/dashboard/resources/new" />}
-                tooltip="New resource"
-                className="text-muted-foreground"
-              >
-                <PlusIcon />
-                <span>New resource</span>
-              </SidebarMenuButton>
-            </SidebarMenuItem>
-            {resources.map((r) => (
-              <SidebarMenuItem key={r.slug}>
-                <SidebarMenuButton
-                  render={<Link href={`/dashboard/resources/${r.slug}`} />}
-                  tooltip={r.name}
-                >
-                  <DatabaseIcon />
-                  <span>{r.name}</span>
-                </SidebarMenuButton>
-                <ItemMenu
-                  onDelete={async () => {
-                    await deleteResourceAction(r.slug)
-                    router.refresh()
-                  }}
-                />
-              </SidebarMenuItem>
-            ))}
-          </SidebarMenu>
-        </SidebarGroupContent>
-      </SidebarGroup>
-
       <SidebarGroup>
         <SidebarGroupLabel>Cubes</SidebarGroupLabel>
         <SidebarGroupContent>
@@ -103,17 +79,54 @@ export function NavMain({
               </SidebarMenuButton>
             </SidebarMenuItem>
             {cubes.map((c) => (
-              <SidebarMenuItem key={c.slug}>
+              <SidebarMenuItem key={c.uuid}>
                 <SidebarMenuButton
-                  render={<Link href={`/dashboard/cubes/${c.slug}`} />}
+                  render={<Link href={`/dashboard/cubes/${c.uuid}`} />}
                   tooltip={c.name}
                 >
                   <BoxIcon />
                   <span>{c.name}</span>
                 </SidebarMenuButton>
                 <ItemMenu
+                  editHref={`/dashboard/cubes/${c.uuid}/edit`}
                   onDelete={async () => {
-                    await deleteCubeAction(c.slug)
+                    await deleteCubeAction(c.uuid)
+                    router.refresh()
+                  }}
+                />
+              </SidebarMenuItem>
+            ))}
+          </SidebarMenu>
+        </SidebarGroupContent>
+      </SidebarGroup>
+
+      <SidebarGroup>
+        <SidebarGroupLabel>Resources</SidebarGroupLabel>
+        <SidebarGroupContent>
+          <SidebarMenu>
+            <SidebarMenuItem>
+              <SidebarMenuButton
+                render={<Link href="/dashboard/resources/new" />}
+                tooltip="New resource"
+                className="text-muted-foreground"
+              >
+                <PlusIcon />
+                <span>New resource</span>
+              </SidebarMenuButton>
+            </SidebarMenuItem>
+            {resources.map((r) => (
+              <SidebarMenuItem key={r.uuid}>
+                <SidebarMenuButton
+                  render={<Link href={`/dashboard/resources/${r.uuid}`} />}
+                  tooltip={r.name}
+                >
+                  <DatabaseIcon />
+                  <span>{r.name}</span>
+                </SidebarMenuButton>
+                <ItemMenu
+                  editHref={`/dashboard/resources/${r.uuid}/edit`}
+                  onDelete={async () => {
+                    await deleteResourceAction(r.uuid)
                     router.refresh()
                   }}
                 />

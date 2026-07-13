@@ -1,19 +1,11 @@
-export function publicOrigin(request: Request): string {
-  const h = request.headers
-  const forwardedHost = h.get("x-forwarded-host")
-  const forwardedProto = h.get("x-forwarded-proto")
-  if (forwardedHost) {
-    const proto = forwardedProto ?? "https"
-    return `${proto}://${forwardedHost}`
-  }
-  return new URL(request.url).origin
+export function originFromHeaders(h: Headers): string {
+  const host = h.get("x-forwarded-host") ?? h.get("host") ?? "localhost:3000"
+  const proto =
+    h.get("x-forwarded-proto") ??
+    (/^(localhost|127\.)/.test(host) ? "http" : "https")
+  return `${proto}://${host}`
 }
 
-export function viewApiBase(
-  request: Request,
-  slug: string,
-  viewSlug: string,
-): { index: string; list: string; item: string } {
-  const base = `${publicOrigin(request)}/api/c/${slug}/views/${viewSlug}`
-  return { index: base, list: `${base}/list`, item: base }
+export function publicOrigin(request: Request): string {
+  return originFromHeaders(request.headers)
 }

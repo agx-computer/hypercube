@@ -17,18 +17,15 @@ import {
   createPostgresResourceAction,
 } from "@/lib/actions"
 
-function slugify(value: string): string {
-  return value
-    .toLowerCase()
-    .trim()
-    .replace(/[^a-z0-9]+/g, "-")
-    .replace(/^-+|-+$/g, "")
+type ResourceType = "static" | "dynamic"
+
+const ACTIONS = {
+  static: createInternalResourceAction,
+  dynamic: createPostgresResourceAction,
 }
 
 export function NewResource() {
-  const [type, setType] = useState<"static" | "dynamic">("static")
-  const [slug, setSlug] = useState("")
-  const [edited, setEdited] = useState(false)
+  const [type, setType] = useState<ResourceType>("static")
 
   return (
     <Card className="w-full max-w-lg">
@@ -36,61 +33,23 @@ export function NewResource() {
         <CardTitle>New resource</CardTitle>
       </CardHeader>
       <CardContent>
-        <form
-          action={
-            type === "static" ? createInternalResourceAction : createPostgresResourceAction
-          }
-        >
+        <form action={ACTIONS[type]}>
           <FieldGroup>
             <Field>
               <FieldLabel htmlFor="name">Name</FieldLabel>
-              <Input
-                id="name"
-                name="name"
-                placeholder="My data"
-                required
-                onChange={(e) => {
-                  if (!edited) setSlug(slugify(e.target.value))
-                }}
-              />
+              <Input id="name" name="name" placeholder="My data" required />
             </Field>
-            <Field>
-              <FieldLabel htmlFor="slug">Slug</FieldLabel>
-              <Input
-                id="slug"
-                name="slug"
-                placeholder="my-data"
-                pattern="[a-z0-9-]+"
-                required
-                value={slug}
-                onChange={(e) => {
-                  setEdited(true)
-                  setSlug(e.target.value)
-                }}
-              />
-            </Field>
-
-            <Field>
-              <FieldLabel htmlFor="description">Description</FieldLabel>
-              <Input id="description" name="description" />
-            </Field>
-
             <Field>
               <FieldLabel>Type</FieldLabel>
               <Tabs
                 value={type}
-                onValueChange={(v) => setType(v as "static" | "dynamic")}
+                onValueChange={(v) => setType(v as ResourceType)}
               >
                 <TabsList>
                   <TabsTrigger value="static">Static</TabsTrigger>
                   <TabsTrigger value="dynamic">Dynamic</TabsTrigger>
                 </TabsList>
               </Tabs>
-              <p className="text-muted-foreground text-sm">
-                {type === "static"
-                  ? "Define collections and enter records by hand."
-                  : "Connect an external database, read live."}
-              </p>
             </Field>
 
             {type === "dynamic" ? (

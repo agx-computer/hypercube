@@ -14,19 +14,21 @@ import {
   SheetHeader,
   SheetTitle,
 } from "@/components/ui/sheet"
-import type { ResourceField } from "@hypercube/core/store"
+import type { TableField } from "@hypercube/core/store"
 import { addFieldAction, updateFieldAction } from "@/lib/actions"
 
 const TYPES = ["text", "number", "boolean", "date"] as const
 
 export function FieldSheet({
-  resourceSlug,
+  resourceId,
+  tableSlug,
   field,
   open,
   onOpenChange,
 }: {
-  resourceSlug: string
-  field?: ResourceField
+  resourceId: string
+  tableSlug: string
+  field?: TableField
   open: boolean
   onOpenChange: (open: boolean) => void
 }) {
@@ -37,9 +39,9 @@ export function FieldSheet({
   async function submit(formData: FormData) {
     setBusy(true)
     if (editing && field) {
-      await updateFieldAction(resourceSlug, field.name, formData)
+      await updateFieldAction(resourceId, tableSlug, field.name, formData)
     } else {
-      await addFieldAction(resourceSlug, formData)
+      await addFieldAction(resourceId, tableSlug, formData)
     }
     setBusy(false)
     onOpenChange(false)

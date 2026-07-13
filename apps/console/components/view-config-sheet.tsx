@@ -1,7 +1,7 @@
 "use client"
 
 import type {
-  ResourceField,
+  TableField,
   FilterOp,
   ViewConfig,
 } from "@hypercube/core/store"
@@ -45,7 +45,7 @@ export function ViewConfigSheet({
 }: {
   open: boolean
   onOpenChange: (o: boolean) => void
-  fields: ResourceField[]
+  fields: TableField[]
   state: ConfigState
   setState: (updater: (s: ConfigState) => ConfigState) => void
   onSave: () => void

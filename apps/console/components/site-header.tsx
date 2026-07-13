@@ -6,7 +6,7 @@ export function SiteHeader({
   title,
   action,
 }: {
-  title: string
+  title: ReactNode
   action?: ReactNode
 }) {
   return (

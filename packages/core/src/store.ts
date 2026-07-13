@@ -3,38 +3,48 @@ import type { Db } from "./db"
 import type { FieldType } from "./model"
 
 // ---------------------------------------------------------------------------
-// Resources: a data source (Postgres connection or built-in fields + records)
+// Resources: a data source (Postgres connection or built-in tables)
 // ---------------------------------------------------------------------------
 
 export type ResourceSource = "postgres" | "internal"
 
-export interface ResourceField {
+export interface ResourceRow {
+  id: number
+  uuid: string
+  name: string
+  source: ResourceSource
+  database_url: string | null
+  schema_name: string
+}
+
+// ---------------------------------------------------------------------------
+// Tables: a named collection of fields and records inside a resource
+// ---------------------------------------------------------------------------
+
+export interface TableField {
   name: string
   type: FieldType
   required: boolean
 }
 
-export interface ResourceRow {
+export interface TableRow {
   id: number
+  resource_id: number
   slug: string
   name: string
-  description: string | null
-  source: ResourceSource
-  database_url: string | null
-  schema_name: string
-  fields: ResourceField[]
-  expose: Record<string, { pageSize?: number; label?: string } | true>
+  fields: TableField[]
+  synced_at: string | null
 }
 
 export interface RecordRow {
   id: number
-  resource_id: number
+  table_id: number
   data: Record<string, unknown>
   created_at: string
 }
 
 // ---------------------------------------------------------------------------
-// Views: a data transform over a resource (select / filter / sort)
+// Views: a data transform over a table (select / filter / sort)
 // ---------------------------------------------------------------------------
 
 export type FilterOp = "eq" | "neq" | "contains" | "gt" | "lt"
@@ -59,37 +69,30 @@ export interface ViewConfig {
 
 export interface ViewRow {
   id: number
-  resource_id: number
+  table_id: number
   slug: string
   name: string
   config: ViewConfig
 }
 
 // ---------------------------------------------------------------------------
-// Cubes: transform engine — reference a view, render its data as agent pages
+// Cubes: a set of Markdown pages, one of them the entry page
 // ---------------------------------------------------------------------------
-
-export type Block =
-  | { type: "heading"; level: 1 | 2 | 3; text: string }
-  | { type: "text"; text: string }
-  | { type: "list"; ordered: boolean; item: string }
-  | { type: "table"; fields: string[] }
-  | { type: "fields"; fields: string[] }
-
-export type PageTemplate =
-  | { mode: "blocks"; blocks: Block[] }
-  | { mode: "handlebars"; source: string }
 
 export interface CubeRow {
   id: number
+  uuid: string
+  name: string
+  entry_page_id: number | null
+}
+
+export interface PageRow {
+  id: number
+  cube_id: number
   slug: string
   name: string
-  resource_id: number
-  view_id: number
-  /** JSONata expression: data -> data. Empty = passthrough. */
-  transform: string
-  /** Single Markdown page template. */
-  template: PageTemplate | null
+  /** A JIM document: optional JS frontmatter plus a Markdown body. */
+  source: string
 }
 
 // ---------------------------------------------------------------------------
@@ -122,47 +125,167 @@ async function ensureSchema(db: Db): Promise<void> {
   await sql`
     create table if not exists hypercube.resources (
       id serial primary key,
-      slug text not null unique,
+      uuid uuid not null unique default gen_random_uuid(),
       name text not null,
-      description text,
       source text not null default 'postgres',
       database_url text,
       schema_name text not null default 'public',
-      fields jsonb not null default '[]',
-      expose jsonb not null default '{}',
       created_at timestamptz not null default now()
     )
   `.execute(db)
   await sql`
-    create table if not exists hypercube.records (
-      id serial primary key,
-      resource_id integer not null references hypercube.resources(id) on delete cascade,
-      data jsonb not null default '{}',
-      created_at timestamptz not null default now()
-    )
+    delete from hypercube.resources where source = 'api'
   `.execute(db)
   await sql`
-    create table if not exists hypercube.views (
+    alter table hypercube.resources
+      add column if not exists uuid uuid not null unique default gen_random_uuid(),
+      drop column if exists slug,
+      drop column if exists url,
+      drop column if exists items_path,
+      drop column if exists description
+  `.execute(db)
+  await sql`
+    create table if not exists hypercube.tables (
       id serial primary key,
       resource_id integer not null references hypercube.resources(id) on delete cascade,
       slug text not null,
       name text not null,
-      config jsonb not null default '{}',
+      fields jsonb not null default '[]',
+      synced_at timestamptz,
       created_at timestamptz not null default now(),
       unique (resource_id, slug)
     )
   `.execute(db)
   await sql`
-    create table if not exists hypercube.cubes (
+    create table if not exists hypercube.records (
       id serial primary key,
-      slug text not null unique,
-      name text not null,
-      resource_id integer not null references hypercube.resources(id) on delete cascade,
-      view_id integer not null references hypercube.views(id) on delete cascade,
-      transform text not null default '',
-      template jsonb,
+      table_id integer not null references hypercube.tables(id) on delete cascade,
+      data jsonb not null default '{}',
       created_at timestamptz not null default now()
     )
+  `.execute(db)
+  await sql`
+    alter table hypercube.records
+      add column if not exists table_id integer references hypercube.tables(id) on delete cascade
+  `.execute(db)
+  await sql`
+    create table if not exists hypercube.views (
+      id serial primary key,
+      table_id integer not null references hypercube.tables(id) on delete cascade,
+      slug text not null,
+      name text not null,
+      config jsonb not null default '{}',
+      created_at timestamptz not null default now(),
+      unique (table_id, slug)
+    )
+  `.execute(db)
+  await sql`
+    alter table hypercube.views
+      add column if not exists table_id integer references hypercube.tables(id) on delete cascade
+  `.execute(db)
+  await sql`
+    do $$
+    begin
+      if exists (
+        select 1 from information_schema.columns
+        where table_schema = 'hypercube'
+          and table_name = 'resources' and column_name = 'fields'
+      ) then
+        insert into hypercube.tables (resource_id, slug, name, fields)
+          select r.id,
+            coalesce(
+              nullif(
+                trim(both '-' from regexp_replace(lower(r.name), '[^a-z0-9]+', '-', 'g')),
+                ''
+              ),
+              'table-' || r.id
+            ),
+            r.name,
+            r.fields
+          from hypercube.resources r
+          where r.source = 'internal'
+            and not exists (
+              select 1 from hypercube.tables t where t.resource_id = r.id
+            );
+        alter table hypercube.resources drop column fields;
+      end if;
+      if exists (
+        select 1 from information_schema.columns
+        where table_schema = 'hypercube'
+          and table_name = 'resources' and column_name = 'expose'
+      ) then
+        alter table hypercube.resources drop column expose;
+      end if;
+      if exists (
+        select 1 from information_schema.columns
+        where table_schema = 'hypercube'
+          and table_name = 'records' and column_name = 'resource_id'
+      ) then
+        update hypercube.records rec set table_id = t.id
+          from hypercube.tables t
+          where rec.table_id is null and t.resource_id = rec.resource_id;
+        delete from hypercube.records where table_id is null;
+        alter table hypercube.records alter column table_id set not null;
+        alter table hypercube.records drop column resource_id;
+      end if;
+      if exists (
+        select 1 from information_schema.columns
+        where table_schema = 'hypercube'
+          and table_name = 'views' and column_name = 'resource_id'
+      ) then
+        update hypercube.views v set table_id = t.id
+          from hypercube.tables t
+          where v.table_id is null and t.resource_id = v.resource_id;
+        delete from hypercube.views where table_id is null;
+        alter table hypercube.views alter column table_id set not null;
+        alter table hypercube.views drop column resource_id;
+      end if;
+    end $$
+  `.execute(db)
+  await sql`
+    create unique index if not exists views_table_id_slug_key
+      on hypercube.views (table_id, slug)
+  `.execute(db)
+  await sql`
+    create table if not exists hypercube.cubes (
+      id serial primary key,
+      uuid uuid not null unique default gen_random_uuid(),
+      name text not null,
+      created_at timestamptz not null default now()
+    )
+  `.execute(db)
+  await sql`
+    create table if not exists hypercube.pages (
+      id serial primary key,
+      cube_id integer not null references hypercube.cubes(id) on delete cascade,
+      slug text not null,
+      name text not null,
+      source text not null default '',
+      created_at timestamptz not null default now(),
+      unique (cube_id, slug)
+    )
+  `.execute(db)
+  await sql`
+    alter table hypercube.cubes
+      add column if not exists entry_page_id integer
+        references hypercube.pages(id) on delete set null
+  `.execute(db)
+  await sql`
+    alter table hypercube.pages
+      add column if not exists source text not null default '',
+      drop column if exists template,
+      drop column if exists bindings,
+      drop column if exists blocks,
+      drop column if exists variables
+  `.execute(db)
+  await sql`
+    alter table hypercube.cubes
+      add column if not exists uuid uuid not null unique default gen_random_uuid(),
+      drop column if exists slug,
+      drop column if exists template,
+      drop column if exists resource_id,
+      drop column if exists view_id,
+      drop column if exists transform
   `.execute(db)
 }
 
@@ -172,15 +295,15 @@ async function ensureSchema(db: Db): Promise<void> {
 
 const resourceColumns = [
   "id",
-  "slug",
+  "uuid",
   "name",
-  "description",
   "source",
   "database_url",
   "schema_name",
-  "fields",
-  "expose",
 ] as const
+
+const UUID_PATTERN =
+  /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
 
 export async function listResources(db: Db): Promise<ResourceRow[]> {
   const rows = await db
@@ -193,24 +316,13 @@ export async function listResources(db: Db): Promise<ResourceRow[]> {
 
 export async function getResource(
   db: Db,
-  slug: string,
+  uuid: string,
 ): Promise<ResourceRow | null> {
+  if (!UUID_PATTERN.test(uuid)) return null
   const row = await db
     .selectFrom("hypercube.resources")
     .select(resourceColumns as unknown as string[])
-    .where("slug", "=", slug)
-    .executeTakeFirst()
-  return (row as unknown as ResourceRow | undefined) ?? null
-}
-
-export async function getResourceById(
-  db: Db,
-  id: number,
-): Promise<ResourceRow | null> {
-  const row = await db
-    .selectFrom("hypercube.resources")
-    .select(resourceColumns as unknown as string[])
-    .where("id", "=", id)
+    .where("uuid", "=", uuid)
     .executeTakeFirst()
   return (row as unknown as ResourceRow | undefined) ?? null
 }
@@ -218,144 +330,300 @@ export async function getResourceById(
 export async function createPostgresResource(
   db: Db,
   resource: {
-    slug: string
     name: string
-    description: string
     database_url: string
     schema_name: string
   },
-): Promise<void> {
-  await db
+): Promise<{ id: number; uuid: string }> {
+  const row = await db
     .insertInto("hypercube.resources")
     .values({
-      slug: resource.slug,
       name: resource.name,
-      description: resource.description || null,
       source: "postgres",
       database_url: resource.database_url,
       schema_name: resource.schema_name || "public",
     })
-    .execute()
+    .returning(["id", "uuid"])
+    .executeTakeFirstOrThrow()
+  const created = row as { id: number; uuid: string }
+  return { id: Number(created.id), uuid: created.uuid }
 }
 
 export async function createInternalResource(
   db: Db,
-  resource: {
-    slug: string
-    name: string
-    description: string
-    fields: ResourceField[]
-  },
-): Promise<void> {
-  await db
+  resource: { name: string },
+): Promise<{ id: number; uuid: string }> {
+  const row = await db
     .insertInto("hypercube.resources")
     .values({
-      slug: resource.slug,
       name: resource.name,
-      description: resource.description || null,
       source: "internal",
       database_url: null,
       schema_name: "public",
-      fields: JSON.stringify(resource.fields),
     })
-    .execute()
+    .returning(["id", "uuid"])
+    .executeTakeFirstOrThrow()
+  const created = row as { id: number; uuid: string }
+  return { id: Number(created.id), uuid: created.uuid }
 }
 
-export async function updateResourceMeta(
+export async function updateResourceName(
   db: Db,
-  slug: string,
-  meta: { name: string; description: string },
+  uuid: string,
+  name: string,
 ): Promise<void> {
   await db
     .updateTable("hypercube.resources")
-    .set({ name: meta.name, description: meta.description || null })
-    .where("slug", "=", slug)
+    .set({ name })
+    .where("uuid", "=", uuid)
     .execute()
 }
 
-export async function deleteResource(db: Db, slug: string): Promise<void> {
+export async function updateResourceConnection(
+  db: Db,
+  uuid: string,
+  patch: { database_url: string; schema_name: string },
+): Promise<void> {
+  await db
+    .updateTable("hypercube.resources")
+    .set({
+      database_url: patch.database_url,
+      schema_name: patch.schema_name,
+    })
+    .where("uuid", "=", uuid)
+    .execute()
+}
+
+export async function deleteResource(db: Db, uuid: string): Promise<void> {
   await db
     .deleteFrom("hypercube.resources")
+    .where("uuid", "=", uuid)
+    .execute()
+}
+
+// ---------------------------------------------------------------------------
+// Tables CRUD (tables belong to a resource)
+// ---------------------------------------------------------------------------
+
+const tableColumns = [
+  "id",
+  "resource_id",
+  "slug",
+  "name",
+  "fields",
+  "synced_at",
+] as const
+
+export async function listTables(
+  db: Db,
+  resourceId: number,
+): Promise<TableRow[]> {
+  const rows = await db
+    .selectFrom("hypercube.tables")
+    .select(tableColumns as unknown as string[])
+    .where("resource_id", "=", resourceId)
+    .orderBy("id")
+    .execute()
+  return rows as unknown as TableRow[]
+}
+
+export async function getTable(
+  db: Db,
+  resourceId: number,
+  slug: string,
+): Promise<TableRow | null> {
+  const row = await db
+    .selectFrom("hypercube.tables")
+    .select(tableColumns as unknown as string[])
+    .where("resource_id", "=", resourceId)
+    .where("slug", "=", slug)
+    .executeTakeFirst()
+  return (row as unknown as TableRow | undefined) ?? null
+}
+
+export async function getTableById(
+  db: Db,
+  id: number,
+): Promise<TableRow | null> {
+  const row = await db
+    .selectFrom("hypercube.tables")
+    .select(tableColumns as unknown as string[])
+    .where("id", "=", id)
+    .executeTakeFirst()
+  return (row as unknown as TableRow | undefined) ?? null
+}
+
+export async function createTable(
+  db: Db,
+  table: {
+    resourceId: number
+    slug: string
+    name: string
+    fields: TableField[]
+  },
+): Promise<number> {
+  const row = await db
+    .insertInto("hypercube.tables")
+    .values({
+      resource_id: table.resourceId,
+      slug: table.slug,
+      name: table.name,
+      fields: JSON.stringify(table.fields),
+    })
+    .returning("id")
+    .executeTakeFirstOrThrow()
+  return Number((row as { id: number }).id)
+}
+
+export async function updateTableName(
+  db: Db,
+  resourceId: number,
+  slug: string,
+  name: string,
+): Promise<void> {
+  await db
+    .updateTable("hypercube.tables")
+    .set({ name })
+    .where("resource_id", "=", resourceId)
     .where("slug", "=", slug)
     .execute()
 }
 
-export async function updateResourceFields(
+export async function deleteTable(
   db: Db,
+  resourceId: number,
   slug: string,
-  fields: ResourceField[],
 ): Promise<void> {
   await db
-    .updateTable("hypercube.resources")
-    .set({ fields: JSON.stringify(fields) })
+    .deleteFrom("hypercube.tables")
+    .where("resource_id", "=", resourceId)
     .where("slug", "=", slug)
+    .execute()
+}
+
+/** Upsert a table from a schema sync; stamps synced_at. Returns the id. */
+export async function upsertSyncedTable(
+  db: Db,
+  table: {
+    resourceId: number
+    slug: string
+    name: string
+    fields: TableField[]
+  },
+): Promise<number> {
+  const row = await db
+    .insertInto("hypercube.tables")
+    .values({
+      resource_id: table.resourceId,
+      slug: table.slug,
+      name: table.name,
+      fields: JSON.stringify(table.fields),
+      synced_at: sql`now()`,
+    })
+    .onConflict((oc) =>
+      oc.columns(["resource_id", "slug"]).doUpdateSet({
+        name: table.name,
+        fields: JSON.stringify(table.fields),
+        synced_at: sql`now()`,
+      }),
+    )
+    .returning("id")
+    .executeTakeFirstOrThrow()
+  return Number((row as { id: number }).id)
+}
+
+export async function deleteTablesExcept(
+  db: Db,
+  resourceId: number,
+  keep: string[],
+): Promise<void> {
+  let query = db
+    .deleteFrom("hypercube.tables")
+    .where("resource_id", "=", resourceId)
+  if (keep.length > 0) query = query.where("slug", "not in", keep)
+  await query.execute()
+}
+
+// ---------------------------------------------------------------------------
+// Fields (on a table)
+// ---------------------------------------------------------------------------
+
+async function setTableFields(
+  db: Db,
+  tableId: number,
+  fields: TableField[],
+): Promise<void> {
+  await db
+    .updateTable("hypercube.tables")
+    .set({ fields: JSON.stringify(fields) })
+    .where("id", "=", tableId)
     .execute()
 }
 
 export async function addField(
   db: Db,
-  slug: string,
-  field: ResourceField,
+  tableId: number,
+  field: TableField,
 ): Promise<void> {
-  const resource = await getResource(db, slug)
-  if (!resource) throw new Error("no such resource")
-  if (resource.fields.some((f) => f.name === field.name)) {
+  const table = await getTableById(db, tableId)
+  if (!table) throw new Error("no such table")
+  if (table.fields.some((f) => f.name === field.name)) {
     throw new Error("field already exists")
   }
-  await updateResourceFields(db, slug, [...resource.fields, field])
+  await setTableFields(db, tableId, [...table.fields, field])
 }
 
 export async function updateField(
   db: Db,
-  slug: string,
+  tableId: number,
   original: string,
-  field: ResourceField,
+  field: TableField,
 ): Promise<void> {
-  const resource = await getResource(db, slug)
-  if (!resource) throw new Error("no such resource")
-  const fields = resource.fields.map((f) => (f.name === original ? field : f))
-  await updateResourceFields(db, slug, fields)
+  const table = await getTableById(db, tableId)
+  if (!table) throw new Error("no such table")
+  const fields = table.fields.map((f) => (f.name === original ? field : f))
+  await setTableFields(db, tableId, fields)
   if (original !== field.name) {
     await sql`
       update hypercube.records
       set data = (data - ${original}::text)
         || jsonb_build_object(${field.name}::text, data -> ${original}::text)
-      where resource_id = ${resource.id} and data ? ${original}::text
+      where table_id = ${tableId} and data ? ${original}::text
     `.execute(db)
   }
 }
 
 export async function deleteField(
   db: Db,
-  slug: string,
+  tableId: number,
   name: string,
 ): Promise<void> {
-  const resource = await getResource(db, slug)
-  if (!resource) throw new Error("no such resource")
-  await updateResourceFields(
+  const table = await getTableById(db, tableId)
+  if (!table) throw new Error("no such table")
+  await setTableFields(
     db,
-    slug,
-    resource.fields.filter((f) => f.name !== name),
+    tableId,
+    table.fields.filter((f) => f.name !== name),
   )
   await sql`
     update hypercube.records set data = data - ${name}
-    where resource_id = ${resource.id}
+    where table_id = ${tableId}
   `.execute(db)
 }
 
 // ---------------------------------------------------------------------------
-// Records CRUD (records belong to a resource)
+// Records CRUD (records belong to a table)
 // ---------------------------------------------------------------------------
 
 export async function listRecords(
   db: Db,
-  resourceId: number,
+  tableId: number,
   opts: { limit: number; offset: number },
 ): Promise<{ rows: RecordRow[]; total: number }> {
   const rows = await db
     .selectFrom("hypercube.records")
-    .select(["id", "resource_id", "data", "created_at"])
-    .where("resource_id", "=", resourceId)
+    .select(["id", "table_id", "data", "created_at"])
+    .where("table_id", "=", tableId)
     .orderBy("id")
     .limit(opts.limit)
     .offset(opts.offset)
@@ -363,76 +631,93 @@ export async function listRecords(
   const counted = await db
     .selectFrom("hypercube.records")
     .select(sql<number>`count(*)::int`.as("n"))
-    .where("resource_id", "=", resourceId)
+    .where("table_id", "=", tableId)
     .executeTakeFirst()
   return { rows: rows as unknown as RecordRow[], total: counted?.n ?? 0 }
 }
 
-export async function getRecord(
+/** A table's records as flat rows ({ id, ...data }). */
+export async function listRows(
   db: Db,
-  resourceId: number,
-  id: number,
-): Promise<RecordRow | null> {
-  const row = await db
-    .selectFrom("hypercube.records")
-    .select(["id", "resource_id", "data", "created_at"])
-    .where("resource_id", "=", resourceId)
-    .where("id", "=", id)
-    .executeTakeFirst()
-  return (row as unknown as RecordRow | undefined) ?? null
+  tableId: number,
+  limit: number,
+): Promise<Record<string, unknown>[]> {
+  const { rows } = await listRecords(db, tableId, { limit, offset: 0 })
+  return rows.map((r) => ({ id: r.id, ...r.data }))
 }
 
 export async function insertRecord(
   db: Db,
-  resourceId: number,
+  tableId: number,
   data: Record<string, unknown>,
 ): Promise<void> {
   await db
     .insertInto("hypercube.records")
-    .values({ resource_id: resourceId, data: JSON.stringify(data) })
+    .values({ table_id: tableId, data: JSON.stringify(data) })
     .execute()
 }
 
 export async function updateRecord(
   db: Db,
-  resourceId: number,
+  tableId: number,
   id: number,
   data: Record<string, unknown>,
 ): Promise<void> {
   await db
     .updateTable("hypercube.records")
     .set({ data: JSON.stringify(data) })
-    .where("resource_id", "=", resourceId)
+    .where("table_id", "=", tableId)
     .where("id", "=", id)
     .execute()
 }
 
 export async function deleteRecord(
   db: Db,
-  resourceId: number,
+  tableId: number,
   id: number,
 ): Promise<void> {
   await db
     .deleteFrom("hypercube.records")
-    .where("resource_id", "=", resourceId)
+    .where("table_id", "=", tableId)
     .where("id", "=", id)
     .execute()
 }
 
-// ---------------------------------------------------------------------------
-// Views CRUD (views belong to a resource)
-// ---------------------------------------------------------------------------
-
-const viewColumns = ["id", "resource_id", "slug", "name", "config"] as const
-
-export async function listViews(
+/** Replace a table's records wholesale (used by schema syncs). */
+export async function replaceRecords(
   db: Db,
-  resourceId: number,
-): Promise<ViewRow[]> {
+  tableId: number,
+  rows: Record<string, unknown>[],
+): Promise<void> {
+  await db.transaction().execute(async (trx) => {
+    await trx
+      .deleteFrom("hypercube.records")
+      .where("table_id", "=", tableId)
+      .execute()
+    if (rows.length === 0) return
+    await trx
+      .insertInto("hypercube.records")
+      .values(
+        rows.map((data) => ({
+          table_id: tableId,
+          data: JSON.stringify(data),
+        })),
+      )
+      .execute()
+  })
+}
+
+// ---------------------------------------------------------------------------
+// Views CRUD (views belong to a table)
+// ---------------------------------------------------------------------------
+
+const viewColumns = ["id", "table_id", "slug", "name", "config"] as const
+
+export async function listViews(db: Db, tableId: number): Promise<ViewRow[]> {
   const rows = await db
     .selectFrom("hypercube.views")
     .select(viewColumns as unknown as string[])
-    .where("resource_id", "=", resourceId)
+    .where("table_id", "=", tableId)
     .orderBy("id")
     .execute()
   return rows as unknown as ViewRow[]
@@ -440,26 +725,14 @@ export async function listViews(
 
 export async function getView(
   db: Db,
-  resourceId: number,
+  tableId: number,
   slug: string,
 ): Promise<ViewRow | null> {
   const row = await db
     .selectFrom("hypercube.views")
     .select(viewColumns as unknown as string[])
-    .where("resource_id", "=", resourceId)
+    .where("table_id", "=", tableId)
     .where("slug", "=", slug)
-    .executeTakeFirst()
-  return (row as unknown as ViewRow | undefined) ?? null
-}
-
-export async function getViewById(
-  db: Db,
-  id: number,
-): Promise<ViewRow | null> {
-  const row = await db
-    .selectFrom("hypercube.views")
-    .select(viewColumns as unknown as string[])
-    .where("id", "=", id)
     .executeTakeFirst()
   return (row as unknown as ViewRow | undefined) ?? null
 }
@@ -467,7 +740,7 @@ export async function getViewById(
 export async function createView(
   db: Db,
   view: {
-    resourceId: number
+    tableId: number
     slug: string
     name: string
     config: ViewConfig
@@ -476,7 +749,7 @@ export async function createView(
   await db
     .insertInto("hypercube.views")
     .values({
-      resource_id: view.resourceId,
+      table_id: view.tableId,
       slug: view.slug,
       name: view.name,
       config: JSON.stringify(view.config),
@@ -486,43 +759,35 @@ export async function createView(
 
 export async function updateView(
   db: Db,
-  resourceId: number,
+  tableId: number,
   slug: string,
   patch: { name: string; config: ViewConfig },
 ): Promise<void> {
   await db
     .updateTable("hypercube.views")
     .set({ name: patch.name, config: JSON.stringify(patch.config) })
-    .where("resource_id", "=", resourceId)
+    .where("table_id", "=", tableId)
     .where("slug", "=", slug)
     .execute()
 }
 
 export async function deleteView(
   db: Db,
-  resourceId: number,
+  tableId: number,
   slug: string,
 ): Promise<void> {
   await db
     .deleteFrom("hypercube.views")
-    .where("resource_id", "=", resourceId)
+    .where("table_id", "=", tableId)
     .where("slug", "=", slug)
     .execute()
 }
 
 // ---------------------------------------------------------------------------
-// Cubes CRUD (a cube references a view and holds page templates)
+// Cubes CRUD (a cube holds pages; one of them is the entry)
 // ---------------------------------------------------------------------------
 
-const cubeColumns = [
-  "id",
-  "slug",
-  "name",
-  "resource_id",
-  "view_id",
-  "transform",
-  "template",
-] as const
+const cubeColumns = ["id", "uuid", "name", "entry_page_id"] as const
 
 export async function listCubes(db: Db): Promise<CubeRow[]> {
   const rows = await db
@@ -533,63 +798,127 @@ export async function listCubes(db: Db): Promise<CubeRow[]> {
   return rows as unknown as CubeRow[]
 }
 
-export async function getCube(db: Db, slug: string): Promise<CubeRow | null> {
+export async function getCube(db: Db, uuid: string): Promise<CubeRow | null> {
+  if (!UUID_PATTERN.test(uuid)) return null
   const row = await db
     .selectFrom("hypercube.cubes")
     .select(cubeColumns as unknown as string[])
-    .where("slug", "=", slug)
+    .where("uuid", "=", uuid)
     .executeTakeFirst()
   return (row as unknown as CubeRow | undefined) ?? null
 }
 
 export async function createCube(
   db: Db,
-  cube: {
-    slug: string
-    name: string
-    resourceId: number
-    viewId: number
-    transform: string
-    template: PageTemplate | null
-  },
-): Promise<void> {
-  await db
+  cube: { name: string },
+): Promise<{ id: number; uuid: string }> {
+  const row = await db
     .insertInto("hypercube.cubes")
-    .values({
-      slug: cube.slug,
-      name: cube.name,
-      resource_id: cube.resourceId,
-      view_id: cube.viewId,
-      transform: cube.transform,
-      template: cube.template ? JSON.stringify(cube.template) : null,
-    })
-    .execute()
+    .values({ name: cube.name })
+    .returning(["id", "uuid"])
+    .executeTakeFirstOrThrow()
+  const created = row as { id: number; uuid: string }
+  return { id: Number(created.id), uuid: created.uuid }
 }
 
 export async function updateCube(
   db: Db,
-  slug: string,
-  patch: {
-    name?: string
-    viewId?: number
-    transform?: string
-    template?: PageTemplate | null
-  },
+  uuid: string,
+  patch: { name?: string; entryPageId?: number | null },
 ): Promise<void> {
   const set: Record<string, unknown> = {}
   if (patch.name !== undefined) set.name = patch.name
-  if (patch.viewId !== undefined) set.view_id = patch.viewId
-  if (patch.transform !== undefined) set.transform = patch.transform
-  if (patch.template !== undefined)
-    set.template = patch.template ? JSON.stringify(patch.template) : null
+  if (patch.entryPageId !== undefined) set.entry_page_id = patch.entryPageId
   if (Object.keys(set).length === 0) return
   await db
     .updateTable("hypercube.cubes")
     .set(set)
+    .where("uuid", "=", uuid)
+    .execute()
+}
+
+export async function deleteCube(db: Db, uuid: string): Promise<void> {
+  await db.deleteFrom("hypercube.cubes").where("uuid", "=", uuid).execute()
+}
+
+// ---------------------------------------------------------------------------
+// Pages CRUD (pages belong to a cube; the cube points at its entry page)
+// ---------------------------------------------------------------------------
+
+const pageColumns = ["id", "cube_id", "slug", "name", "source"] as const
+
+export async function listPages(db: Db, cubeId: number): Promise<PageRow[]> {
+  const rows = await db
+    .selectFrom("hypercube.pages")
+    .select(pageColumns as unknown as string[])
+    .where("cube_id", "=", cubeId)
+    .orderBy("id")
+    .execute()
+  return rows as unknown as PageRow[]
+}
+
+export async function getPage(
+  db: Db,
+  cubeId: number,
+  slug: string,
+): Promise<PageRow | null> {
+  const row = await db
+    .selectFrom("hypercube.pages")
+    .select(pageColumns as unknown as string[])
+    .where("cube_id", "=", cubeId)
+    .where("slug", "=", slug)
+    .executeTakeFirst()
+  return (row as unknown as PageRow | undefined) ?? null
+}
+
+export async function createPage(
+  db: Db,
+  page: {
+    cubeId: number
+    slug: string
+    name: string
+    source: string
+  },
+): Promise<number> {
+  const row = await db
+    .insertInto("hypercube.pages")
+    .values({
+      cube_id: page.cubeId,
+      slug: page.slug,
+      name: page.name,
+      source: page.source,
+    })
+    .returning("id")
+    .executeTakeFirstOrThrow()
+  return Number((row as { id: number }).id)
+}
+
+export async function updatePage(
+  db: Db,
+  cubeId: number,
+  slug: string,
+  patch: { name?: string; source?: string },
+): Promise<void> {
+  const set: Record<string, unknown> = {}
+  if (patch.name !== undefined) set.name = patch.name
+  if (patch.source !== undefined) set.source = patch.source
+  if (Object.keys(set).length === 0) return
+  await db
+    .updateTable("hypercube.pages")
+    .set(set)
+    .where("cube_id", "=", cubeId)
     .where("slug", "=", slug)
     .execute()
 }
 
-export async function deleteCube(db: Db, slug: string): Promise<void> {
-  await db.deleteFrom("hypercube.cubes").where("slug", "=", slug).execute()
+export async function deletePage(
+  db: Db,
+  cubeId: number,
+  slug: string,
+): Promise<void> {
+  await db
+    .deleteFrom("hypercube.pages")
+    .where("cube_id", "=", cubeId)
+    .where("slug", "=", slug)
+    .execute()
 }

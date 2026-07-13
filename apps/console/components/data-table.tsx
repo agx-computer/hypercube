@@ -178,6 +178,7 @@ export function DataTable<TData, TValue>({
                   <TableCell
                     key={cell.id}
                     className={cn(
+                      "max-w-32 truncate",
                       grid && "h-10 py-0",
                       cell.column.id === "__select" && "w-10",
                     )}

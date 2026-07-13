@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server"
-import { renderCube, TemplateError } from "@hypercube/core"
-import { loadCube, cubeMeta } from "@/lib/cube-render"
+import { renderPage, TemplateError } from "@hypercube/core"
+import { loadCube, loadPageEnv, buildMeta, entryPage } from "@/lib/cube-render"
+import { publicOrigin } from "@/lib/origin"
 
 export const dynamic = "force-dynamic"
 
@@ -14,21 +15,25 @@ export async function GET(
     if (!ctx) {
       return NextResponse.json({ error: "no such cube" }, { status: 404 })
     }
-    const meta = cubeMeta(request, ctx)
+    const entry = entryPage(ctx)
+    const source = entry?.source ?? "# {{ cube.name }}\n"
+    const meta = buildMeta(publicOrigin(request), ctx.cube, ctx.pages, entry)
+    const data = await loadPageEnv(ctx.db, source)
 
     const accept = request.headers.get("accept") ?? ""
-    if (accept.includes("text/markdown")) {
-      const md = renderCube(ctx.rows, ctx.cube.template, meta)
-      return new Response(md, {
-        headers: { "content-type": "text/markdown; charset=utf-8" },
+    if (accept.includes("application/json")) {
+      return NextResponse.json({
+        cube: ctx.cube.uuid,
+        name: ctx.cube.name,
+        entry: entry?.slug ?? null,
+        pages: ctx.pages.map((p) => ({ slug: p.slug, name: p.name })),
+        data,
       })
     }
 
-    return NextResponse.json({
-      cube: ctx.cube.slug,
-      name: ctx.cube.name,
-      total: ctx.rows.length,
-      rows: ctx.rows,
+    const md = renderPage(source, data, meta)
+    return new Response(md, {
+      headers: { "content-type": "text/markdown; charset=utf-8" },
     })
   } catch (error) {
     if (error instanceof TemplateError) {

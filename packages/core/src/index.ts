@@ -4,12 +4,6 @@ export type { Field, FieldType, Relation, Entity, SchemaModel } from "./model"
 export type { EntityPolicy, Policy, SiteEntity, SiteModel } from "./policy"
 export { resolveSite } from "./policy"
 export type { ListParams, ListResult, Runtime } from "./runtime"
-export { resourceToModel, createInternalRuntime } from "./internal"
-export {
-  applyView,
-  viewModel,
-  applyTransform,
-  renderCube,
-  defaultTemplate,
-  TemplateError,
-} from "./view"
+export type { RenderMeta } from "./view"
+export { applyView, renderPage, TemplateError } from "./view"
+export { compileJim, parseJim, splitJim, joinJim, JimSyntaxError } from "./jim"

@@ -21,8 +21,8 @@ export function AppSidebar({
   user,
   ...props
 }: {
-  resources: { slug: string; name: string }[]
-  cubes: { slug: string; name: string }[]
+  resources: { uuid: string; name: string }[]
+  cubes: { uuid: string; name: string }[]
   user: { name: string; email: string }
 } & React.ComponentProps<typeof Sidebar>) {
   return (

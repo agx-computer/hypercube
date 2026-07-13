@@ -1,0 +1,41 @@
+# JIM
+
+JIM (JS in Markdown) is Markdown in which `{{…}}` holds a JavaScript
+expression. Rendering evaluates each expression and splices the result into
+the text. The output is Markdown.
+
+```
+# Photos
+
+{{ photos.map(p => `![${p.location}](${p.image})`).join("\n") }}
+```
+
+## Evaluation
+
+- `{{…}}` contains a single JavaScript expression. Statements need an IIFE.
+- Expressions evaluate against an environment supplied by the host. JIM
+  defines no globals.
+- The result becomes text: a string is spliced as-is, `null` and
+  `undefined` become nothing, an array becomes its elements' text
+  concatenated, any other value becomes `String(value)`.
+- Everything outside `{{…}}` passes through untouched. `\{{` produces a
+  literal `{{`.
+- An evaluation error fails the render with a message naming the failing
+  expression.
+
+## File form
+
+A JIM document may open with a frontmatter block fenced by `---` lines. The
+block is JavaScript, run once per render against the host environment. Its
+top-level `const`, `let` and `var` declarations become additional bindings
+for the body's expressions; declarations may reference each other.
+
+```
+---
+const photos = resources["travel-photos"].filter(p => p.country === "New Zealand")
+const count = photos.length
+---
+# Photos ({{ count }})
+
+{{ photos.map(p => `![${p.location}](${p.image})`).join("\n") }}
+```
