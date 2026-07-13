@@ -481,6 +481,17 @@ const tableColumns = [
   "synced_at",
 ] as const
 
+export async function listAllTables(
+  db: Db,
+): Promise<{ resource_id: number; slug: string; name: string }[]> {
+  const rows = await db
+    .selectFrom("hypercube.tables")
+    .select(["resource_id", "slug", "name"])
+    .orderBy("id")
+    .execute()
+  return rows as unknown as { resource_id: number; slug: string; name: string }[]
+}
+
 export async function listTables(
   db: Db,
   resourceId: number,
@@ -913,6 +924,22 @@ export async function deleteCube(db: Db, uuid: string): Promise<void> {
 // ---------------------------------------------------------------------------
 
 const pageColumns = ["id", "cube_id", "slug", "name", "source"] as const
+
+export async function listAllPages(
+  db: Db,
+): Promise<{ cube_id: number; id: number; slug: string; name: string }[]> {
+  const rows = await db
+    .selectFrom("hypercube.pages")
+    .select(["cube_id", "id", "slug", "name"])
+    .orderBy("id")
+    .execute()
+  return rows as unknown as {
+    cube_id: number
+    id: number
+    slug: string
+    name: string
+  }[]
+}
 
 export async function listPages(db: Db, cubeId: number): Promise<PageRow[]> {
   const rows = await db

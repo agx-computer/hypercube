@@ -1,5 +1,7 @@
+import { Suspense } from "react"
 import Link from "next/link"
 import { notFound } from "next/navigation"
+import { DashboardSkeleton } from "@/components/dashboard-skeleton"
 import {
   ensureStore,
   getResource,
@@ -22,6 +24,23 @@ export default async function TablePage({
   params: Promise<{ resourceId: string; table: string }>
 }) {
   const { resourceId, table: tableSlug } = await params
+  return (
+    <Suspense
+      key={`${resourceId}/${tableSlug}`}
+      fallback={<DashboardSkeleton />}
+    >
+      <TableContent resourceId={resourceId} tableSlug={tableSlug} />
+    </Suspense>
+  )
+}
+
+async function TableContent({
+  resourceId,
+  tableSlug,
+}: {
+  resourceId: string
+  tableSlug: string
+}) {
   const db = instanceDb()
   await ensureStore(db)
   const resource = await getResource(db, resourceId)

@@ -1,5 +1,7 @@
+import { Suspense } from "react"
 import Link from "next/link"
 import { notFound } from "next/navigation"
+import { DashboardSkeleton } from "@/components/dashboard-skeleton"
 import { splitJim } from "@hypercube/core/jim"
 import { ensureStore, getCube, listPages } from "@hypercube/core/store"
 import { SiteHeader } from "@/components/site-header"
@@ -19,6 +21,14 @@ export default async function CubePage({
   params: Promise<{ cubeId: string }>
 }) {
   const { cubeId } = await params
+  return (
+    <Suspense key={cubeId} fallback={<DashboardSkeleton />}>
+      <CubeContent cubeId={cubeId} />
+    </Suspense>
+  )
+}
+
+async function CubeContent({ cubeId }: { cubeId: string }) {
   const db = instanceDb()
   await ensureStore(db)
   const cube = await getCube(db, cubeId)

@@ -1,5 +1,7 @@
+import { Suspense } from "react"
 import { notFound } from "next/navigation"
 import { ensureStore, getCube, listPages } from "@hypercube/core/store"
+import { DashboardSkeleton } from "@/components/dashboard-skeleton"
 import { PageEditor } from "@/components/page-editor"
 import { instanceDb } from "@/lib/db"
 import { resourceHints } from "@/lib/resource-hints"
@@ -12,6 +14,23 @@ export default async function CubePageEditorPage({
   params: Promise<{ cubeId: string; page: string }>
 }) {
   const { cubeId, page: pageSlug } = await params
+  return (
+    <Suspense
+      key={`${cubeId}/${pageSlug}`}
+      fallback={<DashboardSkeleton />}
+    >
+      <PageEditorContent cubeId={cubeId} pageSlug={pageSlug} />
+    </Suspense>
+  )
+}
+
+async function PageEditorContent({
+  cubeId,
+  pageSlug,
+}: {
+  cubeId: string
+  pageSlug: string
+}) {
   const db = instanceDb()
   await ensureStore(db)
   const cube = await getCube(db, cubeId)

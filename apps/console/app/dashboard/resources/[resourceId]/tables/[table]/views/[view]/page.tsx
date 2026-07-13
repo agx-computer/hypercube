@@ -1,3 +1,4 @@
+import { Suspense } from "react"
 import { notFound } from "next/navigation"
 import {
   ensureStore,
@@ -7,6 +8,7 @@ import {
   listRows,
   listViews,
 } from "@hypercube/core/store"
+import { DashboardSkeleton } from "@/components/dashboard-skeleton"
 import { SiteHeader } from "@/components/site-header"
 import { TableTabs } from "@/components/table-tabs"
 import { ViewTransform } from "@/components/view-transform"
@@ -21,6 +23,29 @@ export default async function TableViewPage({
   params: Promise<{ resourceId: string; table: string; view: string }>
 }) {
   const { resourceId, table: tableSlug, view: viewSlug } = await params
+  return (
+    <Suspense
+      key={`${resourceId}/${tableSlug}/${viewSlug}`}
+      fallback={<DashboardSkeleton />}
+    >
+      <ViewContent
+        resourceId={resourceId}
+        tableSlug={tableSlug}
+        viewSlug={viewSlug}
+      />
+    </Suspense>
+  )
+}
+
+async function ViewContent({
+  resourceId,
+  tableSlug,
+  viewSlug,
+}: {
+  resourceId: string
+  tableSlug: string
+  viewSlug: string
+}) {
   const db = instanceDb()
   await ensureStore(db)
   const resource = await getResource(db, resourceId)

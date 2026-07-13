@@ -1,5 +1,7 @@
+import { Suspense } from "react"
 import Link from "next/link"
 import { notFound } from "next/navigation"
+import { DashboardSkeleton } from "@/components/dashboard-skeleton"
 import { format } from "date-fns"
 import { ensureStore, getResource, listTables } from "@hypercube/core/store"
 import { SiteHeader } from "@/components/site-header"
@@ -25,6 +27,14 @@ export default async function ResourcePage({
   params: Promise<{ resourceId: string }>
 }) {
   const { resourceId } = await params
+  return (
+    <Suspense key={resourceId} fallback={<DashboardSkeleton />}>
+      <ResourceContent resourceId={resourceId} />
+    </Suspense>
+  )
+}
+
+async function ResourceContent({ resourceId }: { resourceId: string }) {
   const db = instanceDb()
   await ensureStore(db)
   const resource = await getResource(db, resourceId)
