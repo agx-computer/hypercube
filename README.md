@@ -5,9 +5,6 @@
 Hypercube is a context transform engine. It connects to any data source and
 turns it into navigable markdown pages for agents.
 
-The current milestone: connect a Postgres database, choose what to expose,
-and get a generated REST API.
-
 ## Run
 
 ```bash
@@ -20,11 +17,11 @@ Set `DATABASE_URL` (the instance database) and `BETTER_AUTH_SECRET` in
 
 ## API
 
-- `GET /c/:cube` the cube's entry page as Markdown; JSON with
-  `Accept: application/json`
+- `GET /c/:cube` the cube's entry page
 - `GET /c/:cube/:page` a specific page of the cube
-- `GET /api/r/:resource` a resource's rows
-- `GET /api/r/:resource/views/:view` rows through a view
+
+> [!NOTE]
+> Responses are Markdown.
 
 ## Layout
 
