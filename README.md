@@ -17,11 +17,11 @@ Set `DATABASE_URL` (the instance database) and `BETTER_AUTH_SECRET` in
 
 ## API
 
-- `GET /c/:cube` the cube's entry page
-- `GET /c/:cube/:page` a specific page of the cube
-
 > [!NOTE]
 > Responses are Markdown.
+
+- `GET /c/:cube` the cube's entry page
+- `GET /c/:cube/:page` a specific page of the cube
 
 ## Layout
 
