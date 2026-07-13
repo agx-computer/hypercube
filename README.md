@@ -26,9 +26,6 @@ boot. Sign up at `/signup`; the first account becomes the admin.
 
 ## API
 
-> [!NOTE]
-> Responses are Markdown.
-
 - `GET /c/:cube` the cube's entry page
 - `GET /c/:cube/:page` a specific page of the cube
 
