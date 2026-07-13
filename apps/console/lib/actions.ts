@@ -80,7 +80,7 @@ export async function createInternalResourceAction(
 
 export async function createPostgresResourceAction(
   formData: FormData,
-): Promise<void> {
+): Promise<{ uuid: string }> {
   await requireSession()
   const name = String(formData.get("name") ?? "").trim()
   if (!name) throw new Error("resource name required")
@@ -91,14 +91,8 @@ export async function createPostgresResourceAction(
     database_url: String(formData.get("database_url") ?? "").trim(),
     schema_name: String(formData.get("schema_name") ?? "").trim() || "public",
   })
-  const resource = await getResource(db, created.uuid)
-  if (resource) {
-    try {
-      await syncPostgresResource(db, resource)
-    } catch {}
-  }
   revalidatePath("/dashboard", "layout")
-  redirect(`/dashboard/resources/${created.uuid}`)
+  return { uuid: created.uuid }
 }
 
 export async function updateResourceAction(

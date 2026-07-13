@@ -1,11 +1,12 @@
 "use client"
 
-import { useState } from "react"
+import { startTransition, useState } from "react"
+import { useRouter } from "next/navigation"
+import { toast } from "sonner"
 import { Button } from "@/components/ui/button"
 import {
   Card,
   CardContent,
-  CardDescription,
   CardHeader,
   CardTitle,
 } from "@/components/ui/card"
@@ -15,17 +16,45 @@ import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import {
   createInternalResourceAction,
   createPostgresResourceAction,
+  syncResourceAction,
 } from "@/lib/actions"
 
 type ResourceType = "static" | "dynamic"
 
-const ACTIONS = {
-  static: createInternalResourceAction,
-  dynamic: createPostgresResourceAction,
-}
-
 export function NewResource() {
+  const router = useRouter()
   const [type, setType] = useState<ResourceType>("static")
+  const [busy, setBusy] = useState(false)
+
+  async function createDynamic(event: React.FormEvent<HTMLFormElement>) {
+    event.preventDefault()
+    const formData = new FormData(event.currentTarget)
+    setBusy(true)
+    try {
+      const created = await createPostgresResourceAction(formData)
+      const id = toast.loading("Syncing…")
+      router.push(`/dashboard/resources/${created.uuid}`)
+      syncResourceAction(created.uuid)
+        .then((result) => {
+          if ("error" in result) {
+            toast.error(`Sync failed: ${result.error}`, { id })
+            return
+          }
+          toast.success(
+            result.tables === 1
+              ? "Synced 1 table"
+              : `Synced ${result.tables} tables`,
+            { id },
+          )
+          startTransition(() => router.refresh())
+        })
+        .catch((error) => {
+          toast.error(`Sync failed: ${String(error)}`, { id })
+        })
+    } finally {
+      setBusy(false)
+    }
+  }
 
   return (
     <Card className="w-full max-w-lg">
@@ -33,7 +62,10 @@ export function NewResource() {
         <CardTitle>New resource</CardTitle>
       </CardHeader>
       <CardContent>
-        <form action={ACTIONS[type]}>
+        <form
+          action={type === "static" ? createInternalResourceAction : undefined}
+          onSubmit={type === "dynamic" ? createDynamic : undefined}
+        >
           <FieldGroup>
             <Field>
               <FieldLabel htmlFor="name">Name</FieldLabel>
@@ -78,7 +110,9 @@ export function NewResource() {
             ) : null}
 
             <Field>
-              <Button type="submit">Create resource</Button>
+              <Button type="submit" disabled={busy}>
+                Create resource
+              </Button>
             </Field>
           </FieldGroup>
         </form>
