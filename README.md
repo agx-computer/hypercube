@@ -3,7 +3,7 @@
 </p>
 
 Hypercube is a context transform engine. It connects to any data source and
-turns it into an interface agents and applications can use.
+turns it into navigable markdown pages for agents.
 
 The current milestone: connect a Postgres database, choose what to expose,
 and get a generated REST API.

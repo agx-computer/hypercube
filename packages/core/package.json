@@ -3,7 +3,7 @@
   "version": "0.1.0",
   "private": true,
   "type": "module",
-  "description": "Hypercube core: connect a data source, introspect it, apply policy, serve it. The context transform engine.",
+  "description": "Hypercube core: connect a data source, sync its tables, serve it as navigable markdown pages for agents. The context transform engine.",
   "exports": {
     ".": "./src/index.ts",
     "./postgres": "./src/postgres/index.ts",
