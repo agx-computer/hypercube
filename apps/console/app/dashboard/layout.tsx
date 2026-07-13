@@ -22,32 +22,38 @@ export default async function DashboardLayout({
   const session = await requireSession()
   const db = instanceDb()
   await ensureStore(db)
-  const resources = await Promise.all(
-    (await listResources(db)).map(async (r) => ({
-      uuid: r.uuid,
-      name: r.name,
-      source: r.source,
-      tables: (await listTables(db, r.id)).map((t) => ({
-        slug: t.slug,
-        name: t.name,
-      })),
-    })),
-  )
-  const cubes = await Promise.all(
-    (await listCubes(db)).map(async (c) => {
-      const pages = await listPages(db, c.id)
-      const entryId = c.entry_page_id ?? pages[0]?.id ?? null
-      return {
-        uuid: c.uuid,
-        name: c.name,
-        pages: pages.map((p) => ({
-          slug: p.slug,
-          name: p.name,
-          entry: p.id === entryId,
+  const [resources, cubes] = await Promise.all([
+    listResources(db).then((rows) =>
+      Promise.all(
+        rows.map(async (r) => ({
+          uuid: r.uuid,
+          name: r.name,
+          source: r.source,
+          tables: (await listTables(db, r.id)).map((t) => ({
+            slug: t.slug,
+            name: t.name,
+          })),
         })),
-      }
-    }),
-  )
+      ),
+    ),
+    listCubes(db).then((rows) =>
+      Promise.all(
+        rows.map(async (c) => {
+          const pages = await listPages(db, c.id)
+          const entryId = c.entry_page_id ?? pages[0]?.id ?? null
+          return {
+            uuid: c.uuid,
+            name: c.name,
+            pages: pages.map((p) => ({
+              slug: p.slug,
+              name: p.name,
+              entry: p.id === entryId,
+            })),
+          }
+        }),
+      ),
+    ),
+  ])
   return (
     <SidebarProvider
       style={

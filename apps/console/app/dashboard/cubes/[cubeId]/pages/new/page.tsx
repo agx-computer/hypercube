@@ -14,9 +14,11 @@ export default async function NewPageEditorPage({
   const { cubeId } = await params
   const db = instanceDb()
   await ensureStore(db)
-  const cube = await getCube(db, cubeId)
+  const [cube, resources] = await Promise.all([
+    getCube(db, cubeId),
+    resourceHints(db),
+  ])
   if (!cube) notFound()
-  const resources = await resourceHints(db)
 
   return (
     <PageEditor

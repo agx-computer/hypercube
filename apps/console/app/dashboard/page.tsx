@@ -9,8 +9,10 @@ export const dynamic = "force-dynamic"
 export default async function DashboardPage() {
   const db = instanceDb()
   await ensureStore(db)
-  const cubes = await listCubes(db)
-  const resources = await listResources(db)
+  const [cubes, resources] = await Promise.all([
+    listCubes(db),
+    listResources(db),
+  ])
 
   return (
     <>

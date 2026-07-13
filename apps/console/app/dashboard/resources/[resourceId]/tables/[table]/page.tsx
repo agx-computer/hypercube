@@ -28,8 +28,10 @@ export default async function TablePage({
   if (!resource) notFound()
   const table = await getTable(db, resource.id, tableSlug)
   if (!table) notFound()
-  const views = await listViews(db, table.id)
-  const { rows } = await listRecords(db, table.id, { limit: 100, offset: 0 })
+  const [views, { rows }] = await Promise.all([
+    listViews(db, table.id),
+    listRecords(db, table.id, { limit: 100, offset: 0 }),
+  ])
   const readOnly = resource.source === "postgres"
 
   return (

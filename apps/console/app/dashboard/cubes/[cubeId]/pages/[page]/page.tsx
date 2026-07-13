@@ -16,13 +16,15 @@ export default async function CubePageEditorPage({
   await ensureStore(db)
   const cube = await getCube(db, cubeId)
   if (!cube) notFound()
-  const pages = await listPages(db, cube.id)
+  const [pages, resources] = await Promise.all([
+    listPages(db, cube.id),
+    resourceHints(db),
+  ])
   const page = pages.find((p) => p.slug === pageSlug)
   if (!page) notFound()
 
   const entryId = cube.entry_page_id ?? pages[0]?.id ?? null
   const isEntry = page.id === entryId
-  const resources = await resourceHints(db)
 
   return (
     <PageEditor

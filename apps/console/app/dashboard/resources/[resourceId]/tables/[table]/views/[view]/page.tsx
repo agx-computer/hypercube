@@ -27,10 +27,12 @@ export default async function TableViewPage({
   if (!resource) notFound()
   const table = await getTable(db, resource.id, tableSlug)
   if (!table) notFound()
-  const view = await getView(db, table.id, viewSlug)
+  const [view, views, rows] = await Promise.all([
+    getView(db, table.id, viewSlug),
+    listViews(db, table.id),
+    listRows(db, table.id, 1000),
+  ])
   if (!view) notFound()
-  const views = await listViews(db, table.id)
-  const rows = await listRows(db, table.id, 1000)
 
   return (
     <>
