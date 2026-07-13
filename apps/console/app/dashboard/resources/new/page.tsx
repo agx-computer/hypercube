@@ -1,8 +1,6 @@
 import { SiteHeader } from "@/components/site-header"
 import { NewResource } from "@/components/new-resource"
 
-export const dynamic = "force-dynamic"
-
 export default function NewResourcePage() {
   return (
     <>
