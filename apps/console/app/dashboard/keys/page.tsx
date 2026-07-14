@@ -161,7 +161,7 @@ export default function KeysPage() {
                 Copy it now: this key is shown only once.
               </p>
               <div className="flex items-center gap-2">
-                <code className="bg-muted flex-1 overflow-x-auto rounded-md px-3 py-2 text-xs">
+                <code className="bg-muted min-w-0 flex-1 rounded-md px-3 py-2 text-xs break-all">
                   {created}
                 </code>
                 <Button size="icon-sm" variant="outline" onClick={copy}>
