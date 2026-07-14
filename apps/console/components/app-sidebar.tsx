@@ -3,46 +3,28 @@
 import * as React from "react"
 import Link from "next/link"
 import Image from "next/image"
-import { usePathname } from "next/navigation"
-import { NavMain } from "@/components/nav-main"
+import { NavMain, type CubeNav, type ResourceNav } from "@/components/nav-main"
 import { NavUser } from "@/components/nav-user"
 import {
   Sidebar,
   SidebarContent,
   SidebarFooter,
-  SidebarGroup,
-  SidebarGroupContent,
   SidebarHeader,
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
-  SidebarMenuSkeleton,
 } from "@/components/ui/sidebar"
-import type { NavData } from "@/lib/api-types"
-import { useData } from "@/lib/data"
 
-function NavSkeleton() {
-  return (
-    <SidebarGroup>
-      <SidebarGroupContent>
-        <SidebarMenu>
-          {Array.from({ length: 6 }).map((_, i) => (
-            <SidebarMenuItem key={i}>
-              <SidebarMenuSkeleton showIcon />
-            </SidebarMenuItem>
-          ))}
-        </SidebarMenu>
-      </SidebarGroupContent>
-    </SidebarGroup>
-  )
-}
-
-export function AppSidebar(props: React.ComponentProps<typeof Sidebar>) {
-  const pathname = usePathname()
-  const { data, mutate } = useData<NavData>("/api/nav")
-  React.useEffect(() => {
-    mutate()
-  }, [pathname, mutate])
+export function AppSidebar({
+  resources,
+  cubes,
+  user,
+  ...props
+}: {
+  resources: ResourceNav[]
+  cubes: CubeNav[]
+  user: { name: string; email: string }
+} & React.ComponentProps<typeof Sidebar>) {
   return (
     <Sidebar collapsible="offcanvas" {...props}>
       <SidebarHeader>
@@ -60,22 +42,10 @@ export function AppSidebar(props: React.ComponentProps<typeof Sidebar>) {
         </SidebarMenu>
       </SidebarHeader>
       <SidebarContent>
-        {data ? (
-          <NavMain resources={data.resources} cubes={data.cubes} />
-        ) : (
-          <NavSkeleton />
-        )}
+        <NavMain resources={resources} cubes={cubes} />
       </SidebarContent>
       <SidebarFooter>
-        {data ? (
-          <NavUser user={data.user} />
-        ) : (
-          <SidebarMenu>
-            <SidebarMenuItem>
-              <SidebarMenuSkeleton showIcon className="h-12" />
-            </SidebarMenuItem>
-          </SidebarMenu>
-        )}
+        <NavUser user={user} />
       </SidebarFooter>
     </Sidebar>
   )

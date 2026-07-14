@@ -2,8 +2,6 @@ import { NextResponse } from "next/server"
 import { ensureStore, getResource, listTables } from "@hypercube/core/store"
 import { instanceDb } from "@/lib/db"
 
-export const dynamic = "force-dynamic"
-
 export async function GET(
   _request: Request,
   { params }: { params: Promise<{ resource: string }> },

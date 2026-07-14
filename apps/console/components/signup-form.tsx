@@ -14,7 +14,6 @@ import {
 } from "@/components/ui/field"
 import { Input } from "@/components/ui/input"
 import { authClient } from "@/lib/auth-client"
-import { clearData } from "@/lib/data"
 
 export function SignupForm({
   mode,
@@ -40,8 +39,8 @@ export function SignupForm({
       setError(result.error.message ?? "Something went wrong")
       return
     }
-    clearData()
     router.push("/dashboard")
+    router.refresh()
   }
 
   return (

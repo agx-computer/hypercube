@@ -1,9 +1,77 @@
-import { ViewDetailView } from "@/components/views/view-detail"
+import { Suspense } from "react"
+import { notFound } from "next/navigation"
+import {
+  getResource,
+  getTable,
+  getView,
+  listRows,
+  listViews,
+} from "@hypercube/core/store"
+import { DashboardSkeleton } from "@/components/dashboard-skeleton"
+import { SiteHeader } from "@/components/site-header"
+import { TableTabs } from "@/components/table-tabs"
+import { ViewTransform } from "@/components/view-transform"
+import { DeleteView } from "@/components/delete-view"
+import { instanceDb } from "@/lib/db"
+import { requireSession } from "@/lib/session"
 
-export function generateStaticParams() {
-  return []
+export default function TableViewPage({
+  params,
+}: {
+  params: Promise<{ resourceId: string; table: string; view: string }>
+}) {
+  return (
+    <Suspense fallback={<DashboardSkeleton />}>
+      <ViewContent params={params} />
+    </Suspense>
+  )
 }
 
-export default function TableViewPage() {
-  return <ViewDetailView />
+async function ViewContent({
+  params,
+}: {
+  params: Promise<{ resourceId: string; table: string; view: string }>
+}) {
+  await requireSession()
+  const { resourceId, table: tableSlug, view: viewSlug } = await params
+  const db = instanceDb()
+  const resource = await getResource(db, resourceId)
+  if (!resource) notFound()
+  const table = await getTable(db, resource.id, tableSlug)
+  if (!table) notFound()
+  const [view, views, rows] = await Promise.all([
+    getView(db, table.id, viewSlug),
+    listViews(db, table.id),
+    listRows(db, table.id, 1000),
+  ])
+  if (!view) notFound()
+
+  return (
+    <>
+      <SiteHeader
+        title={`${resource.name} / ${table.name} / ${view.name}`}
+        action={
+          <DeleteView
+            resourceId={resource.uuid}
+            tableSlug={table.slug}
+            viewSlug={view.slug}
+          />
+        }
+      />
+      <TableTabs
+        resourceId={resource.uuid}
+        tableSlug={table.slug}
+        views={views.map((v) => ({ slug: v.slug, name: v.name }))}
+      />
+      <ViewTransform
+        key={`${resource.uuid}/${table.slug}/${view.slug}`}
+        resourceId={resource.uuid}
+        tableSlug={table.slug}
+        viewSlug={view.slug}
+        fields={table.fields}
+        rows={rows}
+        initial={view.config}
+      />
+    </>
+  )
 }

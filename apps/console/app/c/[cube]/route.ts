@@ -3,8 +3,6 @@ import { renderPage, TemplateError } from "@hypercube/core"
 import { loadCube, loadPageEnv, buildMeta, entryPage } from "@/lib/cube-render"
 import { publicOrigin } from "@/lib/origin"
 
-export const dynamic = "force-dynamic"
-
 export async function GET(
   request: Request,
   { params }: { params: Promise<{ cube: string }> },

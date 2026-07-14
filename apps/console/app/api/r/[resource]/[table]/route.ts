@@ -7,8 +7,6 @@ import {
 } from "@hypercube/core/store"
 import { instanceDb } from "@/lib/db"
 
-export const dynamic = "force-dynamic"
-
 export async function GET(
   _request: Request,
   { params }: { params: Promise<{ resource: string; table: string }> },

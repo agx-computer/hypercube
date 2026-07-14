@@ -1,6 +1,7 @@
 "use client"
 
 import { useTransition } from "react"
+import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import {
   DropdownMenu,
@@ -10,7 +11,6 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import { deleteRecordAction } from "@/lib/actions"
-import { refreshData } from "@/lib/data"
 import { MoreHorizontalIcon, PencilIcon, Trash2Icon } from "lucide-react"
 
 export function RecordActions({
@@ -24,12 +24,13 @@ export function RecordActions({
   recordId: number
   onEdit: () => void
 }) {
+  const router = useRouter()
   const [pending, startTransition] = useTransition()
 
   function remove() {
     startTransition(async () => {
       await deleteRecordAction(resourceId, tableSlug, recordId)
-      refreshData()
+      router.refresh()
     })
   }
 
