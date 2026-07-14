@@ -20,7 +20,7 @@ import {
 import { Skeleton } from "@/components/ui/skeleton"
 import { authClient } from "@/lib/auth-client"
 import { useCubes, useResources } from "@/lib/queries"
-import { BookOpenIcon, KeyRoundIcon } from "lucide-react"
+import { BookOpenIcon, ExternalLinkIcon, KeyRoundIcon } from "lucide-react"
 
 function NavSkeleton() {
   return (
@@ -95,6 +95,7 @@ export function AppSidebar(props: React.ComponentProps<typeof Sidebar>) {
             >
               <BookOpenIcon />
               <span>Docs</span>
+              <ExternalLinkIcon className="text-muted-foreground ml-auto" />
             </SidebarMenuButton>
           </SidebarMenuItem>
         </SidebarMenu>
