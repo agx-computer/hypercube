@@ -25,7 +25,6 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table"
-import { API_URL } from "@/lib/api"
 import { authClient } from "@/lib/auth-client"
 import { CheckIcon, CopyIcon, PlusIcon, Trash2Icon } from "lucide-react"
 
@@ -89,10 +88,6 @@ export default function KeysPage() {
         }
       />
       <div className="flex flex-1 flex-col gap-4 p-4 md:p-6">
-        <p className="text-muted-foreground text-sm">
-          Send a key in the <code className="bg-muted px-1">x-api-key</code>{" "}
-          header to call the API: <code className="bg-muted px-1">{`curl -H "x-api-key: hc_…" ${API_URL}/cubes`}</code>
-        </p>
         {keys.data.length === 0 ? (
           <div className="flex flex-1 flex-col items-center justify-center gap-4 border border-dashed py-20">
             <p className="text-muted-foreground text-sm">No API keys yet.</p>
