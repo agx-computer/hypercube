@@ -5,6 +5,7 @@
 Hypercube is a context transform engine. It connects to any data source and
 turns it into navigable markdown pages for agents.
 
+- Demo: https://demo.hypercube.sh (email: `admin@example.com`, password: `admin1234`)
 - Docs: https://docs.hypercube.sh
 - Cloud: https://cloud.hypercube.sh
 
