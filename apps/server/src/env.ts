@@ -6,6 +6,6 @@ export type AppEnv = {
   Variables: {
     db: Db
     auth: Auth
-    session: Session
+    session?: Session
   }
 }

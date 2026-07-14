@@ -9,6 +9,7 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
+    "@better-auth/api-key": "^1.6.23",
     "@hypercube/core": "workspace:*",
     "better-auth": "^1.6.23",
     "hono": "^4.12.30"

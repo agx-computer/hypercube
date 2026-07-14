@@ -3,6 +3,7 @@
 import * as React from "react"
 import Link from "next/link"
 import Image from "next/image"
+import { usePathname } from "next/navigation"
 import { NavMain } from "@/components/nav-main"
 import { NavUser } from "@/components/nav-user"
 import {
@@ -19,6 +20,7 @@ import {
 import { Skeleton } from "@/components/ui/skeleton"
 import { authClient } from "@/lib/auth-client"
 import { useCubes, useResources } from "@/lib/queries"
+import { KeyRoundIcon } from "lucide-react"
 
 function NavSkeleton() {
   return (
@@ -40,6 +42,7 @@ function NavSkeleton() {
 }
 
 export function AppSidebar(props: React.ComponentProps<typeof Sidebar>) {
+  const pathname = usePathname()
   const cubes = useCubes()
   const resources = useResources()
   const session = authClient.useSession()
@@ -68,6 +71,18 @@ export function AppSidebar(props: React.ComponentProps<typeof Sidebar>) {
         )}
       </SidebarContent>
       <SidebarFooter>
+        <SidebarMenu>
+          <SidebarMenuItem>
+            <SidebarMenuButton
+              render={<Link href="/dashboard/keys" />}
+              tooltip="API Keys"
+              isActive={pathname === "/dashboard/keys"}
+            >
+              <KeyRoundIcon />
+              <span>API Keys</span>
+            </SidebarMenuButton>
+          </SidebarMenuItem>
+        </SidebarMenu>
         {user ? (
           <NavUser
             user={{ name: user.name || user.email, email: user.email }}

@@ -13,6 +13,7 @@
   },
   "dependencies": {
     "@base-ui/react": "^1.6.0",
+    "@better-auth/api-key": "^1.6.23",
     "@codemirror/autocomplete": "^6.20.3",
     "@codemirror/commands": "^6.10.4",
     "@codemirror/lang-javascript": "^6.2.5",

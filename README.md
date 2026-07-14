@@ -39,4 +39,4 @@ the admin.
 
 ## Later
 
-More connectors, write endpoints, API tokens, the schema builder.
+More connectors, the schema builder.

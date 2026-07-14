@@ -99,7 +99,7 @@ export interface PageRow {
 // Schema
 // ---------------------------------------------------------------------------
 
-const SCHEMA_VERSION = 1
+const SCHEMA_VERSION = 2
 
 let ensuring: Promise<void> | null = null
 
@@ -373,6 +373,32 @@ async function ensureAuthSchema(db: Db): Promise<void> {
     )
   `.execute(db)
   await sql`
+    create table if not exists "apikey" (
+      "id" text not null primary key,
+      "configId" text not null,
+      "name" text,
+      "start" text,
+      "referenceId" text not null,
+      "prefix" text,
+      "key" text not null,
+      "refillInterval" integer,
+      "refillAmount" integer,
+      "lastRefillAt" timestamptz,
+      "enabled" boolean,
+      "rateLimitEnabled" boolean,
+      "rateLimitTimeWindow" integer,
+      "rateLimitMax" integer,
+      "requestCount" integer,
+      "remaining" integer,
+      "lastRequest" timestamptz,
+      "expiresAt" timestamptz,
+      "createdAt" timestamptz not null,
+      "updatedAt" timestamptz not null,
+      "permissions" text,
+      "metadata" text
+    )
+  `.execute(db)
+  await sql`
     create index if not exists "session_userId_idx" on "session" ("userId")
   `.execute(db)
   await sql`
@@ -380,6 +406,15 @@ async function ensureAuthSchema(db: Db): Promise<void> {
   `.execute(db)
   await sql`
     create index if not exists "verification_identifier_idx" on "verification" ("identifier")
+  `.execute(db)
+  await sql`
+    create index if not exists "apikey_referenceId_idx" on "apikey" ("referenceId")
+  `.execute(db)
+  await sql`
+    create index if not exists "apikey_key_idx" on "apikey" ("key")
+  `.execute(db)
+  await sql`
+    create index if not exists "apikey_configId_idx" on "apikey" ("configId")
   `.execute(db)
 }
 
