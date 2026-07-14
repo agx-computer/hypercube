@@ -4,7 +4,7 @@ import { ensureStore } from "@hypercube/core/store"
 import { createAuth } from "./auth"
 import { openDb } from "./db"
 import type { AppEnv } from "./env"
-import { requireSession } from "./session"
+import { requireApiKey, requireSession } from "./session"
 import { cubes } from "./routes/cubes"
 import { publicRoutes } from "./routes/public"
 import { resources } from "./routes/resources"
@@ -38,6 +38,8 @@ app.use("/cubes", requireSession)
 app.use("/cubes/*", requireSession)
 app.use("/resources", requireSession)
 app.use("/resources/*", requireSession)
+app.use("/c/*", requireApiKey)
+app.use("/r/*", requireApiKey)
 
 app.route("/cubes", cubes)
 app.route("/resources", resources)

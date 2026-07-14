@@ -6,8 +6,8 @@ description: The HTTP endpoints a cube is served on.
 All endpoints are `GET` and return JSON errors (`{ "error": "…" }`) with
 status 404 for unknown ids and 422 when a page fails to render.
 
-Endpoints are currently unauthenticated: anyone with a cube's id can read it.
-API tokens are on the roadmap.
+Endpoints require an API key: create one in the console under API Keys and
+send it in the `x-api-key` header.
 
 ## `GET /c/:cube`
 
