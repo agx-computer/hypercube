@@ -1,0 +1,5 @@
+BETTER_AUTH_URL=http://localhost:8787
+CONSOLE_ORIGIN=http://localhost:3000
+COOKIE_DOMAIN=
+DATABASE_URL=postgres://user:pass@localhost:5432/hypercube
+BETTER_AUTH_SECRET=generate-a-long-random-secret

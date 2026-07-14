@@ -1,0 +1,17 @@
+{
+  "compilerOptions": {
+    "target": "ESNext",
+    "module": "ESNext",
+    "moduleResolution": "Bundler",
+    "strict": true,
+    "skipLibCheck": true,
+    "noEmit": true,
+    "lib": ["ESNext"],
+    "types": ["./worker-configuration.d.ts"]
+  },
+  "include": [
+    "src",
+    "worker-configuration.d.ts",
+    "../../packages/core/src/wasm.d.ts"
+  ]
+}

@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useState } from "react"
+import { useState } from "react"
 import { Button } from "@/components/ui/button"
 import {
   Sheet,
@@ -10,14 +10,12 @@ import {
   SheetTrigger,
 } from "@/components/ui/sheet"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { API_URL } from "@/lib/api"
 import { CheckIcon, CopyIcon, PlugIcon } from "lucide-react"
 
 export function ConnectCube({ cubeId }: { cubeId: string }) {
-  const [url, setUrl] = useState(`/c/${cubeId}`)
+  const url = `${API_URL}/c/${cubeId}`
   const [copied, setCopied] = useState(false)
-  useEffect(() => {
-    setUrl(`${window.location.origin}/c/${cubeId}`)
-  }, [cubeId])
 
   async function copy() {
     await navigator.clipboard.writeText(url)

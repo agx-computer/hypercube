@@ -1,6 +1,5 @@
 import type { RenderMeta } from "@hypercube/core"
 import {
-  ensureStore,
   getCube,
   listPages,
   listResources,
@@ -9,7 +8,6 @@ import {
 } from "@hypercube/core/store"
 import type { CubeRow, PageRow } from "@hypercube/core/store"
 import type { Db } from "@hypercube/core"
-import { instanceDb } from "@/lib/db"
 
 export interface CubeContext {
   db: Db
@@ -17,9 +15,7 @@ export interface CubeContext {
   pages: PageRow[]
 }
 
-export async function loadCube(slug: string): Promise<CubeContext | null> {
-  const db = instanceDb()
-  await ensureStore(db)
+export async function loadCube(db: Db, slug: string): Promise<CubeContext | null> {
   const cube = await getCube(db, slug)
   if (!cube) return null
   const pages = await listPages(db, cube.id)
@@ -44,10 +40,6 @@ function referencedSlugs(source: string): Set<string> {
   return slugs
 }
 
-/**
- * Build a page's env: the resources its source references, each an object
- * mapping table name/slug to that table's rows.
- */
 export async function loadPageEnv(
   db: Db,
   source: string,

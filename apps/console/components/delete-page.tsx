@@ -1,7 +1,9 @@
 "use client"
 
+import { useRouter } from "next/navigation"
+import { useQueryClient } from "@tanstack/react-query"
 import { SubmitButton } from "@/components/submit-button"
-import { deletePageAction } from "@/lib/actions"
+import { api } from "@/lib/api"
 
 export function DeletePageButton({
   cubeId,
@@ -10,9 +12,20 @@ export function DeletePageButton({
   cubeId: string
   pageSlug: string
 }) {
-  const action = deletePageAction.bind(null, cubeId, pageSlug)
+  const router = useRouter()
+  const queryClient = useQueryClient()
+
+  async function remove() {
+    await api(`/cubes/${cubeId}/pages/${pageSlug}`, { method: "DELETE" })
+    await Promise.all([
+      queryClient.invalidateQueries({ queryKey: ["cubes"] }),
+      queryClient.invalidateQueries({ queryKey: ["cube", cubeId] }),
+    ])
+    router.push(`/dashboard/cubes/${cubeId}`)
+  }
+
   return (
-    <form action={action}>
+    <form action={remove}>
       <SubmitButton variant="destructive" size="sm">
         Delete page
       </SubmitButton>

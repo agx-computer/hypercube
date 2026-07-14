@@ -1,8 +1,9 @@
 "use client"
 
 import Link from "next/link"
-import { usePathname } from "next/navigation"
+import { usePathname, useRouter } from "next/navigation"
 import { useState } from "react"
+import { useQueryClient } from "@tanstack/react-query"
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -16,7 +17,7 @@ import {
 } from "@/components/ui/dialog"
 import { Field, FieldLabel } from "@/components/ui/field"
 import { SubmitButton } from "@/components/submit-button"
-import { createViewAction } from "@/lib/actions"
+import { api } from "@/lib/api"
 import { PlusIcon } from "lucide-react"
 
 export function TableTabs({
@@ -29,9 +30,24 @@ export function TableTabs({
   views: { slug: string; name: string }[]
 }) {
   const pathname = usePathname()
+  const router = useRouter()
+  const queryClient = useQueryClient()
   const [open, setOpen] = useState(false)
   const base = `/dashboard/resources/${resourceId}/tables/${tableSlug}`
-  const create = createViewAction.bind(null, resourceId, tableSlug)
+
+  async function create(formData: FormData) {
+    const name = String(formData.get("name") ?? "").trim()
+    if (!name) return
+    const created = await api<{ slug: string }>(
+      `/resources/${resourceId}/tables/${tableSlug}/views`,
+      { method: "POST", body: JSON.stringify({ name }) },
+    )
+    setOpen(false)
+    await queryClient.invalidateQueries({
+      queryKey: ["table", resourceId, tableSlug],
+    })
+    router.push(`${base}/views/${created.slug}`)
+  }
 
   const tab = (href: string, label: string, active: boolean) => (
     <Link

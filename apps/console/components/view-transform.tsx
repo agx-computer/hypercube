@@ -1,7 +1,7 @@
 "use client"
 
 import { useMemo, useState } from "react"
-import { useRouter } from "next/navigation"
+import { useQueryClient } from "@tanstack/react-query"
 import { applyView } from "@hypercube/core/view"
 import type { TableField, ViewConfig } from "@hypercube/core/store"
 import { Button } from "@/components/ui/button"
@@ -14,7 +14,7 @@ import {
   TableRow,
 } from "@/components/ui/table"
 import { ViewConfigSheet, type ConfigState } from "@/components/view-config-sheet"
-import { saveViewAction } from "@/lib/actions"
+import { api } from "@/lib/api"
 import { SlidersHorizontalIcon } from "lucide-react"
 
 function cellText(value: unknown): string {
@@ -38,7 +38,7 @@ export function ViewTransform({
   rows: Record<string, unknown>[]
   initial: ViewConfig
 }) {
-  const router = useRouter()
+  const queryClient = useQueryClient()
   const [open, setOpen] = useState(false)
   const [busy, setBusy] = useState(false)
 
@@ -87,10 +87,15 @@ export function ViewTransform({
 
   async function save() {
     setBusy(true)
-    await saveViewAction(resourceId, tableSlug, viewSlug, config)
+    await api(
+      `/resources/${resourceId}/tables/${tableSlug}/views/${viewSlug}`,
+      { method: "PATCH", body: JSON.stringify({ config }) },
+    )
     setBusy(false)
     setOpen(false)
-    router.refresh()
+    await queryClient.invalidateQueries({
+      queryKey: ["view", resourceId, tableSlug, viewSlug],
+    })
   }
 
   return (

@@ -1,30 +1,39 @@
 "use client"
 
 import { useTransition } from "react"
-import { useRouter } from "next/navigation"
+import { useQueryClient } from "@tanstack/react-query"
 import { toast } from "sonner"
 import { Button } from "@/components/ui/button"
-import { syncResourceAction } from "@/lib/actions"
+import { api, ApiError } from "@/lib/api"
 import { RefreshCwIcon } from "lucide-react"
 import { cn } from "@/lib/utils"
 
 export function SyncResource({ resourceId }: { resourceId: string }) {
-  const router = useRouter()
+  const queryClient = useQueryClient()
   const [pending, startTransition] = useTransition()
 
   function sync() {
     startTransition(async () => {
-      const result = await syncResourceAction(resourceId)
-      if ("error" in result) {
-        toast.error(`Sync failed: ${result.error}`)
-        return
+      try {
+        const result = await api<{ tables: number }>(
+          `/resources/${resourceId}/sync`,
+          { method: "POST" },
+        )
+        toast.success(
+          result.tables === 1
+            ? "Synced 1 table"
+            : `Synced ${result.tables} tables`,
+        )
+        await Promise.all([
+          queryClient.invalidateQueries({ queryKey: ["resources"] }),
+          queryClient.invalidateQueries({ queryKey: ["resource", resourceId] }),
+          queryClient.invalidateQueries({ queryKey: ["table", resourceId] }),
+        ])
+      } catch (error) {
+        toast.error(
+          `Sync failed: ${error instanceof ApiError ? error.message : String(error)}`,
+        )
       }
-      toast.success(
-        result.tables === 1
-          ? "Synced 1 table"
-          : `Synced ${result.tables} tables`,
-      )
-      router.refresh()
     })
   }
 

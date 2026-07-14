@@ -2,8 +2,9 @@
 
 import { useTransition } from "react"
 import { useRouter } from "next/navigation"
+import { useQueryClient } from "@tanstack/react-query"
 import { Button } from "@/components/ui/button"
-import { deleteViewAction } from "@/lib/actions"
+import { api } from "@/lib/api"
 import { LoaderCircleIcon, Trash2Icon } from "lucide-react"
 
 export function DeleteView({
@@ -16,6 +17,7 @@ export function DeleteView({
   viewSlug: string
 }) {
   const router = useRouter()
+  const queryClient = useQueryClient()
   const [pending, startTransition] = useTransition()
   return (
     <Button
@@ -24,8 +26,14 @@ export function DeleteView({
       disabled={pending}
       onClick={() =>
         startTransition(async () => {
-          await deleteViewAction(resourceId, tableSlug, viewSlug)
-          router.refresh()
+          await api(
+            `/resources/${resourceId}/tables/${tableSlug}/views/${viewSlug}`,
+            { method: "DELETE" },
+          )
+          await queryClient.invalidateQueries({
+            queryKey: ["table", resourceId, tableSlug],
+          })
+          router.push(`/dashboard/resources/${resourceId}/tables/${tableSlug}`)
         })
       }
     >

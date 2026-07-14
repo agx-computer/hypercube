@@ -99,6 +99,8 @@ export interface PageRow {
 // Schema
 // ---------------------------------------------------------------------------
 
+const SCHEMA_VERSION = 1
+
 let ensuring: Promise<void> | null = null
 
 export async function ensureStore(db: Db): Promise<void> {
@@ -110,7 +112,19 @@ export async function ensureStore(db: Db): Promise<void> {
   return ensuring
 }
 
+async function schemaCurrent(db: Db): Promise<boolean> {
+  const meta = await sql<{ ok: boolean }>`
+    select to_regclass('hypercube.meta') is not null as ok
+  `.execute(db)
+  if (!meta.rows[0]?.ok) return false
+  const row = await sql<{ version: number }>`
+    select version from hypercube.meta
+  `.execute(db)
+  return row.rows[0]?.version === SCHEMA_VERSION
+}
+
 async function doEnsure(db: Db): Promise<void> {
+  if (await schemaCurrent(db)) return
   // Serialize concurrent first-run DDL across requests/processes. The lock
   // is transaction-scoped so the store stays safe behind poolers running
   // in transaction mode.
@@ -118,7 +132,18 @@ async function doEnsure(db: Db): Promise<void> {
     await sql`set local statement_timeout = '120s'`.execute(trx)
     await sql`set local lock_timeout = '30s'`.execute(trx)
     await sql`select pg_advisory_xact_lock(4919283)`.execute(trx)
+    if (await schemaCurrent(trx)) return
     await ensureSchema(trx)
+    await sql`
+      create table if not exists hypercube.meta (
+        id integer primary key default 1 check (id = 1),
+        version integer not null
+      )
+    `.execute(trx)
+    await sql`
+      insert into hypercube.meta (id, version) values (1, ${SCHEMA_VERSION})
+      on conflict (id) do update set version = excluded.version
+    `.execute(trx)
   })
 }
 

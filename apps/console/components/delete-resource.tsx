@@ -1,6 +1,8 @@
 "use client"
 
 import { useTransition } from "react"
+import { useRouter } from "next/navigation"
+import { useQueryClient } from "@tanstack/react-query"
 import { toast } from "sonner"
 import { Button } from "@/components/ui/button"
 import {
@@ -10,13 +12,23 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import { SubmitButton } from "@/components/submit-button"
-import { deleteResourceAction } from "@/lib/actions"
+import { api } from "@/lib/api"
 import { MoreHorizontalIcon, Trash2Icon } from "lucide-react"
 
+function useDeleteResource(resourceId: string) {
+  const router = useRouter()
+  const queryClient = useQueryClient()
+  return async () => {
+    await api(`/resources/${resourceId}`, { method: "DELETE" })
+    await queryClient.invalidateQueries({ queryKey: ["resources"] })
+    router.push("/dashboard")
+  }
+}
+
 export function DeleteResource({ resourceId }: { resourceId: string }) {
-  const action = deleteResourceAction.bind(null, resourceId)
+  const remove = useDeleteResource(resourceId)
   return (
-    <form action={action}>
+    <form action={remove}>
       <SubmitButton variant="destructive" size="sm">
         Delete resource
       </SubmitButton>
@@ -25,6 +37,7 @@ export function DeleteResource({ resourceId }: { resourceId: string }) {
 }
 
 export function DeleteResourceMenu({ resourceId }: { resourceId: string }) {
+  const remove = useDeleteResource(resourceId)
   const [pending, startTransition] = useTransition()
   return (
     <DropdownMenu>
@@ -38,7 +51,7 @@ export function DeleteResourceMenu({ resourceId }: { resourceId: string }) {
           onClick={() => {
             const id = toast.loading("Deleting…")
             startTransition(async () => {
-              await deleteResourceAction(resourceId)
+              await remove()
               toast.dismiss(id)
             })
           }}

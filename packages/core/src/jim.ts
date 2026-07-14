@@ -40,11 +40,7 @@ export class JimSyntaxError extends Error {
   }
 }
 
-export interface CompiledJim {
-  render(env: Record<string, unknown>): string
-}
-
-function lineOf(source: string, offset: number): number {
+export function lineOf(source: string, offset: number): number {
   let line = 1
   for (let i = 0; i < offset && i < source.length; i++) {
     if (source[i] === "\n") line += 1
@@ -275,7 +271,7 @@ function scanDecls(code: string): DeclStart[] {
   return found
 }
 
-function topLevelDecls(code: string): string[] {
+export function topLevelDecls(code: string): string[] {
   return [...new Set(scanDecls(code).map((d) => d.name))]
 }
 
@@ -325,98 +321,4 @@ export function buildFrontmatter(
     parts.push(`const ${name} = ${code}`)
   }
   return parts.join("\n")
-}
-
-function compileFrontmatter(
-  doc: JimDoc,
-): ((env: Record<string, unknown>) => Record<string, unknown>) | null {
-  if (!doc.frontmatter.trim()) return null
-  const names = topLevelDecls(doc.frontmatter)
-  const returns = names
-    .map((n) => `${n}: typeof ${n} === "undefined" ? undefined : ${n}`)
-    .join(", ")
-  try {
-    return new Function(
-      "env",
-      `with (env) {\n${doc.frontmatter}\n;return { ${returns} }\n}`,
-    ) as (env: Record<string, unknown>) => Record<string, unknown>
-  } catch (error) {
-    const message = error instanceof Error ? error.message : String(error)
-    throw new JimSyntaxError(`frontmatter: ${message}`, 2)
-  }
-}
-
-function toText(value: unknown): string {
-  if (value == null) return ""
-  if (typeof value === "string") return value
-  if (Array.isArray(value)) return value.map(toText).join("")
-  return String(value)
-}
-
-function describe(code: string): string {
-  const flat = code.trim().replace(/\s+/g, " ")
-  return flat.length > 60 ? `${flat.slice(0, 57)}…` : flat
-}
-
-/** Compile a JIM document into a render function. Throws JimSyntaxError. */
-export function compileJim(source: string): CompiledJim {
-  const doc = splitJim(source)
-  const declare = compileFrontmatter(doc)
-  const segments = parseJim(doc.body)
-  const parts = segments.map((segment) => {
-    if (segment.kind === "text") {
-      return { segment, evaluate: null, line: 0 }
-    }
-    const line = doc.bodyLine - 1 + lineOf(doc.body, segment.offset)
-    if (!segment.value.trim()) {
-      throw new JimSyntaxError("empty {{ }} expression", line)
-    }
-    let evaluate: (env: Record<string, unknown>) => unknown
-    try {
-      evaluate = new Function(
-        "env",
-        `with (env) { return (${segment.value}\n) }`,
-      ) as (env: Record<string, unknown>) => unknown
-    } catch (error) {
-      const message = error instanceof Error ? error.message : String(error)
-      throw new JimSyntaxError(
-        `{{ ${describe(segment.value)} }}: ${message}`,
-        line,
-      )
-    }
-    return { segment, evaluate, line }
-  })
-
-  return {
-    render(env: Record<string, unknown>): string {
-      let scope = env
-      if (declare) {
-        try {
-          scope = { ...env, ...declare(env) }
-        } catch (error) {
-          const message =
-            error instanceof Error ? error.message : String(error)
-          throw new JimSyntaxError(`frontmatter: ${message}`, 2)
-        }
-      }
-      let out = ""
-      for (const part of parts) {
-        if (!part.evaluate) {
-          out += part.segment.value
-          continue
-        }
-        try {
-          out += toText(part.evaluate(scope))
-        } catch (error) {
-          const message =
-            error instanceof Error ? error.message : String(error)
-          throw new JimSyntaxError(
-            `{{ ${describe(part.segment.value)} }}: ${message}`,
-            part.line || 1,
-          )
-        }
-      }
-      return out
-    },
-  }
 }

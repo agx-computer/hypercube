@@ -2,6 +2,7 @@
 
 import { useRouter } from "next/navigation"
 import { useState } from "react"
+import { useQueryClient } from "@tanstack/react-query"
 import Image from "next/image"
 import { cn } from "@/lib/utils"
 import { SubmitButton } from "@/components/submit-button"
@@ -21,6 +22,7 @@ export function SignupForm({
   ...props
 }: { mode: "setup" | "signin" } & React.ComponentProps<"div">) {
   const router = useRouter()
+  const queryClient = useQueryClient()
   const [error, setError] = useState("")
 
   async function submit(formData: FormData) {
@@ -39,8 +41,8 @@ export function SignupForm({
       setError(result.error.message ?? "Something went wrong")
       return
     }
+    queryClient.clear()
     router.push("/dashboard")
-    router.refresh()
   }
 
   return (

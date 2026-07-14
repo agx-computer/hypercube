@@ -7,8 +7,6 @@ COPY apps/console/package.json apps/console/
 RUN pnpm install --frozen-lockfile --filter console --filter @hypercube/core
 COPY packages/core packages/core
 COPY apps/console apps/console
-ENV DATABASE_URL=postgres://build:build@localhost:5432/build
-ENV BETTER_AUTH_SECRET=build-placeholder
 RUN pnpm --filter console build
 
 FROM node:22-alpine AS runner

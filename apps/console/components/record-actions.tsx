@@ -1,7 +1,7 @@
 "use client"
 
 import { useTransition } from "react"
-import { useRouter } from "next/navigation"
+import { useQueryClient } from "@tanstack/react-query"
 import { Button } from "@/components/ui/button"
 import {
   DropdownMenu,
@@ -10,7 +10,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
-import { deleteRecordAction } from "@/lib/actions"
+import { api } from "@/lib/api"
 import { MoreHorizontalIcon, PencilIcon, Trash2Icon } from "lucide-react"
 
 export function RecordActions({
@@ -24,13 +24,18 @@ export function RecordActions({
   recordId: number
   onEdit: () => void
 }) {
-  const router = useRouter()
+  const queryClient = useQueryClient()
   const [pending, startTransition] = useTransition()
 
   function remove() {
     startTransition(async () => {
-      await deleteRecordAction(resourceId, tableSlug, recordId)
-      router.refresh()
+      await api(
+        `/resources/${resourceId}/tables/${tableSlug}/records/${recordId}`,
+        { method: "DELETE" },
+      )
+      await queryClient.invalidateQueries({
+        queryKey: ["table", resourceId, tableSlug],
+      })
     })
   }
 

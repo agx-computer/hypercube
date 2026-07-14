@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from "react"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
+import { useQueryClient } from "@tanstack/react-query"
 import Markdown from "react-markdown"
 import remarkGfm from "remark-gfm"
 import {
@@ -35,12 +36,7 @@ import {
   SheetTitle,
 } from "@/components/ui/sheet"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import {
-  createPageAction,
-  deletePageAction,
-  previewPageAction,
-  savePageAction,
-} from "@/lib/actions"
+import { api } from "@/lib/api"
 import { cn } from "@/lib/utils"
 import {
   EyeIcon,
@@ -73,6 +69,7 @@ export function PageEditor({
   source?: string
 }) {
   const router = useRouter()
+  const queryClient = useQueryClient()
   const [busy, setBusy] = useState(false)
   const [name, setName] = useState(pageName ?? "")
   const [initial] = useState(() => {
@@ -161,33 +158,48 @@ export function PageEditor({
     const source = joinJim(frontmatter, body)
     try {
       if (isNew) {
-        const result = await createPageAction(cubeId, { name, source })
-        if (result?.error) {
-          setSaveError(result.error)
-          return
-        }
+        const created = await api<{ slug: string }>(`/cubes/${cubeId}/pages`, {
+          method: "POST",
+          body: JSON.stringify({ name, source }),
+        })
+        await Promise.all([
+          queryClient.invalidateQueries({ queryKey: ["cubes"] }),
+          queryClient.invalidateQueries({ queryKey: ["cube", cubeId] }),
+        ])
+        router.push(`/dashboard/cubes/${cubeId}/pages/${created.slug}`)
       } else if (pageSlug) {
-        const result = await savePageAction(cubeId, pageSlug, { source })
-        if (result?.error) {
-          setSaveError(result.error)
-          return
-        }
+        await api(`/cubes/${cubeId}/pages/${pageSlug}`, {
+          method: "PATCH",
+          body: JSON.stringify({ source }),
+        })
         setSavedSnapshot(snapshot(name, frontmatter, body))
+        await queryClient.invalidateQueries({ queryKey: ["cube", cubeId] })
       }
+    } catch (error) {
+      setSaveError(error instanceof Error ? error.message : String(error))
     } finally {
       setBusy(false)
     }
-    router.refresh()
   }
 
   async function openPreview() {
     setPreview(null)
     setPreviewOpen(true)
-    setPreview(
-      await previewPageAction(cubeId, pageSlug ?? "new", {
-        source: joinJim(frontmatter, body),
-      }),
-    )
+    try {
+      setPreview(
+        await api<{ markdown: string }>(`/cubes/${cubeId}/preview`, {
+          method: "POST",
+          body: JSON.stringify({
+            source: joinJim(frontmatter, body),
+            page: pageSlug,
+          }),
+        }),
+      )
+    } catch (error) {
+      setPreview({
+        error: error instanceof Error ? error.message : String(error),
+      })
+    }
   }
 
   return (
@@ -248,7 +260,18 @@ export function PageEditor({
                   </DropdownMenuItem>
                   <DropdownMenuItem
                     variant="destructive"
-                    onClick={() => deletePageAction(cubeId, pageSlug)}
+                    onClick={async () => {
+                      await api(`/cubes/${cubeId}/pages/${pageSlug}`, {
+                        method: "DELETE",
+                      })
+                      await Promise.all([
+                        queryClient.invalidateQueries({ queryKey: ["cubes"] }),
+                        queryClient.invalidateQueries({
+                          queryKey: ["cube", cubeId],
+                        }),
+                      ])
+                      router.push(`/dashboard/cubes/${cubeId}`)
+                    }}
                   >
                     <Trash2Icon />
                     Delete page

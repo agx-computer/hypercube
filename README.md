@@ -7,22 +7,19 @@ turns it into navigable markdown pages for agents.
 
 ## Run
 
-With Docker, Postgres included:
-
-```bash
-BETTER_AUTH_SECRET=$(openssl rand -base64 32) docker compose up -d
-```
-
-Or from source:
-
 ```bash
 pnpm install
+pnpm dev:server
 pnpm dev
 ```
 
-Set `DATABASE_URL` (the application database) and `BETTER_AUTH_SECRET` in
-`apps/console/.env.local` — an empty database is fine, migrations run on
-boot. Sign up at `/signup`; the first account becomes the admin.
+The API runs on Cloudflare Workers (`apps/server`). Copy
+`apps/server/.dev.vars.example` to `apps/server/.dev.vars` and set
+`DATABASE_URL` (the application database) and `BETTER_AUTH_SECRET` — an empty
+database is fine, migrations run on boot. The console (`apps/console`) reads
+`NEXT_PUBLIC_API_URL` from `apps/console/.env.local` (defaults to
+`https://api.hypercube.sh`). Sign up at `/signup`; the first account becomes
+the admin.
 
 ## API
 
@@ -33,8 +30,9 @@ boot. Sign up at `/signup`; the first account becomes the admin.
 
 - `packages/core` the engine: schema model, Postgres introspection, query
   runtime, instance store, JIM
-- `apps/console` the product: Next.js console (better-auth, shadcn/ui) and
-  the generated API
+- `apps/server` the API: Hono on Cloudflare Workers (better-auth, resource
+  endpoints, the public cube pages)
+- `apps/console` the console: Next.js static UI (TanStack Query, shadcn/ui)
 - `apps/docs` the documentation site (Fumadocs): what Hypercube is and how
   to self-host
 - `specs/jim.md` the page format: JIM, JavaScript in Markdown

@@ -1,0 +1,11 @@
+import { createMiddleware } from "hono/factory"
+import type { AppEnv } from "./env"
+
+export const requireSession = createMiddleware<AppEnv>(async (c, next) => {
+  const session = await c
+    .get("auth")
+    .api.getSession({ headers: c.req.raw.headers })
+  if (!session) return c.json({ error: "unauthorized" }, 401)
+  c.set("session", session)
+  await next()
+})

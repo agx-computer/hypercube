@@ -1,0 +1,16 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "hypercube-api",
+  "main": "src/index.ts",
+  "compatibility_date": "2026-07-14",
+  "compatibility_flags": ["nodejs_compat"],
+  "routes": [{ "pattern": "api.hypercube.sh", "custom_domain": true }],
+  "observability": {
+    "enabled": true
+  },
+  "vars": {
+    "BETTER_AUTH_URL": "https://api.hypercube.sh",
+    "CONSOLE_ORIGIN": "https://cloud.hypercube.sh",
+    "COOKIE_DOMAIN": ".hypercube.sh"
+  }
+}

@@ -1,6 +1,6 @@
 "use client"
 
-import { useRouter } from "next/navigation"
+import { useQueryClient } from "@tanstack/react-query"
 import { Button } from "@/components/ui/button"
 import { SubmitButton } from "@/components/submit-button"
 import { Checkbox } from "@/components/ui/checkbox"
@@ -15,7 +15,7 @@ import {
   SheetTitle,
 } from "@/components/ui/sheet"
 import type { TableField } from "@hypercube/core/store"
-import { addFieldAction, updateFieldAction } from "@/lib/actions"
+import { api } from "@/lib/api"
 
 const TYPES = ["text", "number", "boolean", "date"] as const
 
@@ -32,17 +32,30 @@ export function FieldSheet({
   open: boolean
   onOpenChange: (open: boolean) => void
 }) {
-  const router = useRouter()
+  const queryClient = useQueryClient()
   const editing = Boolean(field)
 
   async function submit(formData: FormData) {
+    const body = JSON.stringify({
+      name: String(formData.get("name") ?? "").trim(),
+      type: String(formData.get("type") ?? "text"),
+      required: formData.get("required") !== null,
+    })
     if (editing && field) {
-      await updateFieldAction(resourceId, tableSlug, field.name, formData)
+      await api(
+        `/resources/${resourceId}/tables/${tableSlug}/fields/${encodeURIComponent(field.name)}`,
+        { method: "PATCH", body },
+      )
     } else {
-      await addFieldAction(resourceId, tableSlug, formData)
+      await api(`/resources/${resourceId}/tables/${tableSlug}/fields`, {
+        method: "POST",
+        body,
+      })
     }
     onOpenChange(false)
-    router.refresh()
+    await queryClient.invalidateQueries({
+      queryKey: ["table", resourceId, tableSlug],
+    })
   }
 
   return (

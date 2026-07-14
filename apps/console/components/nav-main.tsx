@@ -3,6 +3,7 @@
 import { useTransition } from "react"
 import Link from "next/link"
 import { usePathname, useRouter } from "next/navigation"
+import { useQueryClient } from "@tanstack/react-query"
 import { toast } from "sonner"
 import {
   Collapsible,
@@ -27,7 +28,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
-import { deleteCubeAction, deleteResourceAction } from "@/lib/actions"
+import { api } from "@/lib/api"
 import {
   BoxIcon,
   ChevronRightIcon,
@@ -129,6 +130,7 @@ export function NavMain({
 }) {
   const router = useRouter()
   const pathname = usePathname()
+  const queryClient = useQueryClient()
 
   return (
     <>
@@ -165,8 +167,11 @@ export function NavMain({
                   <ItemMenu
                     editHref={`${base}/edit`}
                     onDelete={async () => {
-                      await deleteCubeAction(cube.uuid)
-                      router.refresh()
+                      await api(`/cubes/${cube.uuid}`, { method: "DELETE" })
+                      await queryClient.invalidateQueries({
+                        queryKey: ["cubes"],
+                      })
+                      router.push("/dashboard")
                     }}
                   />
                   <CollapseToggle />
@@ -229,8 +234,13 @@ export function NavMain({
                   <ItemMenu
                     editHref={`${base}/edit`}
                     onDelete={async () => {
-                      await deleteResourceAction(resource.uuid)
-                      router.refresh()
+                      await api(`/resources/${resource.uuid}`, {
+                        method: "DELETE",
+                      })
+                      await queryClient.invalidateQueries({
+                        queryKey: ["resources"],
+                      })
+                      router.push("/dashboard")
                     }}
                   />
                   <CollapseToggle />

@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useTransition } from "react"
-import { useRouter } from "next/navigation"
+import { useQueryClient } from "@tanstack/react-query"
 import { toast } from "sonner"
 import type { Column, ColumnDef } from "@tanstack/react-table"
 import type { TableField } from "@hypercube/core/store"
@@ -17,7 +17,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
-import { deleteFieldAction } from "@/lib/actions"
+import { api } from "@/lib/api"
 import {
   ArrowDownIcon,
   ArrowUpIcon,
@@ -103,7 +103,7 @@ export function RecordsTable({
   rows: Row[]
   readOnly?: boolean
 }) {
-  const router = useRouter()
+  const queryClient = useQueryClient()
   const [editing, setEditing] = useState<TableField | undefined>(undefined)
   const [adding, setAdding] = useState(false)
   const [record, setRecord] = useState<Row | undefined>(undefined)
@@ -113,9 +113,14 @@ export function RecordsTable({
   function removeField(name: string) {
     const id = toast.loading("Deleting field…")
     startTransition(async () => {
-      await deleteFieldAction(resourceId, tableSlug, name)
+      await api(
+        `/resources/${resourceId}/tables/${tableSlug}/fields/${encodeURIComponent(name)}`,
+        { method: "DELETE" },
+      )
       toast.dismiss(id)
-      router.refresh()
+      await queryClient.invalidateQueries({
+        queryKey: ["table", resourceId, tableSlug],
+      })
     })
   }
 

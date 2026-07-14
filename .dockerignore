@@ -3,5 +3,8 @@
 **/.env.local
 **/.source
 **/tsconfig.tsbuildinfo
+**/.wrangler
+**/.dev.vars
+**/.dev.vars.*
 .git
 apps/docs

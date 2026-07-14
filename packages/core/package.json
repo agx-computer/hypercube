@@ -9,15 +9,18 @@
     "./postgres": "./src/postgres/index.ts",
     "./store": "./src/store.ts",
     "./view": "./src/view.ts",
-    "./jim": "./src/jim.ts"
+    "./jim": "./src/jim.ts",
+    "./render": "./src/render.ts"
   },
   "scripts": {
     "typecheck": "tsc --noEmit",
     "lint": "pnpm run typecheck"
   },
   "dependencies": {
+    "@jitl/quickjs-wasmfile-release-sync": "^0.32.0",
     "kysely": "^0.28.0",
-    "pg": "^8.16.0"
+    "pg": "^8.16.0",
+    "quickjs-emscripten": "^0.32.0"
   },
   "devDependencies": {
     "@types/pg": "^8",

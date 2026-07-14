@@ -1,6 +1,6 @@
 "use client"
 
-import { useRouter } from "next/navigation"
+import { useQueryClient } from "@tanstack/react-query"
 import type { TableField } from "@hypercube/core/store"
 import { Button } from "@/components/ui/button"
 import { SubmitButton } from "@/components/submit-button"
@@ -15,7 +15,7 @@ import {
   SheetHeader,
   SheetTitle,
 } from "@/components/ui/sheet"
-import { createRecordAction, updateRecordAction } from "@/lib/actions"
+import { api } from "@/lib/api"
 
 const INPUT_TYPE: Record<string, string> = {
   text: "text",
@@ -38,17 +38,34 @@ export function RecordSheet({
   open: boolean
   onOpenChange: (open: boolean) => void
 }) {
-  const router = useRouter()
+  const queryClient = useQueryClient()
   const editing = Boolean(record)
 
   async function submit(formData: FormData) {
+    const values: Record<string, unknown> = {}
+    for (const field of fields) {
+      if (field.type === "boolean") {
+        values[field.name] = formData.get(field.name) !== null
+      } else {
+        values[field.name] = String(formData.get(field.name) ?? "")
+      }
+    }
+    const body = JSON.stringify({ values })
     if (editing && record) {
-      await updateRecordAction(resourceId, tableSlug, record.id, formData)
+      await api(
+        `/resources/${resourceId}/tables/${tableSlug}/records/${record.id}`,
+        { method: "PATCH", body },
+      )
     } else {
-      await createRecordAction(resourceId, tableSlug, formData)
+      await api(`/resources/${resourceId}/tables/${tableSlug}/records`, {
+        method: "POST",
+        body,
+      })
     }
     onOpenChange(false)
-    router.refresh()
+    await queryClient.invalidateQueries({
+      queryKey: ["table", resourceId, tableSlug],
+    })
   }
 
   return (
