@@ -7,6 +7,8 @@ COPY apps/console/package.json apps/console/
 RUN pnpm install --frozen-lockfile --filter console --filter @hypercube/core
 COPY packages/core packages/core
 COPY apps/console apps/console
+ARG NEXT_PUBLIC_API_URL=https://api.hypercube.sh
+ENV NEXT_PUBLIC_API_URL=$NEXT_PUBLIC_API_URL
 RUN pnpm --filter console build
 
 FROM node:22-alpine AS runner
