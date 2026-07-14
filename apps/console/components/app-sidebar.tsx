@@ -20,7 +20,7 @@ import {
 import { Skeleton } from "@/components/ui/skeleton"
 import { authClient } from "@/lib/auth-client"
 import { useCubes, useResources } from "@/lib/queries"
-import { KeyRoundIcon } from "lucide-react"
+import { BookOpenIcon, KeyRoundIcon } from "lucide-react"
 
 function NavSkeleton() {
   return (
@@ -80,6 +80,21 @@ export function AppSidebar(props: React.ComponentProps<typeof Sidebar>) {
             >
               <KeyRoundIcon />
               <span>API Keys</span>
+            </SidebarMenuButton>
+          </SidebarMenuItem>
+          <SidebarMenuItem>
+            <SidebarMenuButton
+              render={
+                <a
+                  href="https://docs.hypercube.sh"
+                  target="_blank"
+                  rel="noreferrer"
+                />
+              }
+              tooltip="Docs"
+            >
+              <BookOpenIcon />
+              <span>Docs</span>
             </SidebarMenuButton>
           </SidebarMenuItem>
         </SidebarMenu>
