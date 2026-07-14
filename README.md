@@ -36,6 +36,7 @@ the admin.
 - `apps/server` the API: Hono on Cloudflare Workers (better-auth, resource
   endpoints, the public cube pages)
 - `apps/console` the console: Next.js static UI (TanStack Query, shadcn/ui)
+- `apps/web` the landing page
 - `apps/docs` the documentation site (Fumadocs): what Hypercube is and how
   to self-host
 - `specs/jim.md` the page format: JIM, JavaScript in Markdown
