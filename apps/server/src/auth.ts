@@ -13,11 +13,17 @@ export function createAuth(env: CloudflareBindings, db: Db) {
     emailAndPassword: { enabled: true },
     session: { cookieCache: { enabled: true, maxAge: 5 * 60 } },
     plugins: [apiKey({ defaultPrefix: "hc_" })],
-    advanced: env.COOKIE_DOMAIN
-      ? {
-          crossSubDomainCookies: { enabled: true, domain: env.COOKIE_DOMAIN },
-        }
-      : {},
+    advanced: {
+      ...(env.COOKIE_DOMAIN
+        ? {
+            crossSubDomainCookies: {
+              enabled: true,
+              domain: env.COOKIE_DOMAIN,
+            },
+          }
+        : {}),
+      ...(env.COOKIE_PREFIX ? { cookiePrefix: env.COOKIE_PREFIX } : {}),
+    },
     databaseHooks: {
       user: {
         create: {

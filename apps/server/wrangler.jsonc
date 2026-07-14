@@ -11,7 +11,8 @@
   "vars": {
     "BETTER_AUTH_URL": "https://api.hypercube.sh",
     "CONSOLE_ORIGIN": "https://cloud.hypercube.sh",
-    "COOKIE_DOMAIN": ".hypercube.sh"
+    "COOKIE_DOMAIN": ".hypercube.sh",
+    "COOKIE_PREFIX": ""
   },
   "env": {
     "demo": {
@@ -23,7 +24,8 @@
       "vars": {
         "BETTER_AUTH_URL": "https://api.demo.hypercube.sh",
         "CONSOLE_ORIGIN": "https://demo.hypercube.sh",
-        "COOKIE_DOMAIN": ".demo.hypercube.sh"
+        "COOKIE_DOMAIN": ".demo.hypercube.sh",
+        "COOKIE_PREFIX": "hypercube-demo"
       }
     }
   }
